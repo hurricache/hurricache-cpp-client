@@ -9,8 +9,8 @@ add_library(hurricache_standalone_client STATIC
 target_compile_features(hurricache_standalone_client PUBLIC cxx_std_23)
 
 target_include_directories(hurricache_standalone_client PUBLIC
-        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-        PRIVATE include
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
 )
 
 # Стэндэлон-клиент также ссылается на common

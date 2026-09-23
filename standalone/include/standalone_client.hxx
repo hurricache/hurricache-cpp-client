@@ -45,6 +45,12 @@ public:
 
     [[nodiscard]] int32_t getDefaultCompressionThreshold() const;
 
+    hurricache::GetRequest buildGetRequest(const Key &key, const KeyHint &hint, int32_t clientId) const;
+
+    hurricache::Value buildValue(const Value &value, std::chrono::milliseconds ttl, int32_t clientId) const;
+
+    hurricache::Value buildValue(const Value &value, int32_t clientId) const;
+
     // =========================================================================
     // TTL MANAGEMENT
     // =========================================================================
@@ -328,6 +334,8 @@ private:
 
     void RunCompletionQueue();
 
+    hurricache::Key buildKey(const Key &key, const KeyHint &hint, int32_t clientId) const;
+
     static constexpr int32_t kDefaultCompressionThreshold = 64 * 1024; // 64KB по умолчанию
 
     template<typename RequestType, typename ResponseType, typename ResultType>
@@ -371,10 +379,7 @@ private:
         // 1. Создаем асинхронный ридер через вызов метода стаба
         call->reader = (asyncStub_.get()->*grpc_method_ptr)(&call->context, request, &cq_);
 
-        // 2. Запускаем сам вызов
-        call->reader->StartCall();
-
-        // 3. Запрашиваем чтение первого элемента (дальше цепочка замкнется в Proceed)
+        // 2. Запрашиваем чтение первого элемента (дальше цепочка замкнется в Proceed)
         call->reader->Read(&call->current_chunk, call);
 
         return future;

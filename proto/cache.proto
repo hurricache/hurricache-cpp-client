@@ -677,9 +677,11 @@ service HurriCacheGrpcService {
   rpc atomicExchange(AtomicCreate) returns (AtomicValue) {}
 
   // [ATOMIC] Increment (Fetch-and-Add).
+  // in case of overflow OUT_OF_RANGE
   rpc atomicAdd(AtomicCreate) returns (AtomicValue) {}
 
   // [ATOMIC] Decrement (Fetch-and-Sub).
+  // in case of overflow OUT_OF_RANGE
   rpc atomicSub(AtomicCreate) returns (AtomicValue) {}
 
   // [ATOMIC] Bitwise OR.

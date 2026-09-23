@@ -11,8 +11,8 @@ pkg_check_modules(LIBDEFLATE REQUIRED IMPORTED_TARGET libdeflate)
 set(PROTO_SRCS
         "${PROTO_GEN_DIR}/cache.pb.cc"
         "${PROTO_GEN_DIR}/cache.pb.h"
-        "${PROTO_GEN_DIR}/cache_grpc.pb.cc"
-        "${PROTO_GEN_DIR}/cache_grpc.pb.h"
+        "${PROTO_GEN_DIR}/cache.grpc.pb.cc"
+        "${PROTO_GEN_DIR}/cache.grpc.pb.h"
 )
 
 add_custom_command(

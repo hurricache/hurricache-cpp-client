@@ -21,3 +21,4 @@ add_compile_options(
 add_subdirectory(common)
 add_subdirectory(smart)
 add_subdirectory(standalone)
+add_subdirectory(tests)

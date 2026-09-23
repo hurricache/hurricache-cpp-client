@@ -39,12 +39,12 @@ target_compile_features(hurricache_smart_client PUBLIC cxx_std_23)
 
 target_include_directories(hurricache_smart_client PUBLIC
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-        PRIVATE
+        PUBLIC
         "${COORD_GEN_DIR}"
 )
 
 # Смарт-клиент использует и общий хурикэш (cache.proto), и свой координатор
-target_link_libraries(hurricache_smart_client PRIVATE
+target_link_libraries(hurricache_smart_client PUBLIC
         hurricache_common
         gRPC::grpc++
         protobuf::libprotobuf

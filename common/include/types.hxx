@@ -8,6 +8,8 @@
 #include <ostream>
 #include <stdint.h>
 #include <utility>
+#include <cstring>
+#include <algorithm>
 
 struct KeyHint {
     uint32_t weak_hash;
@@ -19,6 +21,12 @@ std::ostream &operator<<(std::ostream &os, const KeyHint &obj);
 struct Key {
     uint32_t size;
     char *data;
+    
+    bool operator<(const Key& other) const {
+        int cmp = memcmp(data, other.data, std::min(size, other.size));
+        if (cmp != 0) return cmp < 0;
+        return size < other.size;
+    }
 };
 std::ostream &operator<<(std::ostream &os, const Key &obj);
 
@@ -33,12 +41,19 @@ template<typename ELEM>
 struct Ordered : public ELEM{
     uint64_t weight;
 
+    Ordered() : ELEM(), weight(0) {}
+
     template <typename... Args>
     Ordered(uint64_t w, Args&&... args)
         : ELEM(std::forward<Args>(args)...), weight(w) {}
 
     friend std::ostream & operator<<(std::ostream &os, const Ordered &obj) {
         return os << "weight: " << obj.weight << " " << static_cast<const ELEM &>(obj);
+    }
+    
+    bool operator<(const Ordered &other) const {
+        if (weight != other.weight) return weight < other.weight;
+        return static_cast<const ELEM &>(*this) < static_cast<const ELEM &>(other);
     }
 };
 

@@ -7,12 +7,27 @@
 #include "types.hxx"
 #include <cache.grpc.pb.h>
 #include <future>
+#include <chrono>
+
+::hurricache::Key buildKeyProto(const Key& key, const KeyHint& hint, int32_t clientId);
+::hurricache::GetRequest buildGetRequestProto(const Key& key, const KeyHint& hint, int32_t clientId);
+::hurricache::Value buildValueProto(const Value& value, std::chrono::milliseconds ttl, int32_t clientId);
+inline ::hurricache::Value buildValueProtoNoTtl(const Value& value, int32_t clientId) {
+    return buildValueProto(value, std::chrono::milliseconds{0}, clientId);
+}
+::hurricache::AtomicCreate buildAtomicCreateProto(const Key& key, const KeyHint& hint, int32_t clientId,
+                                                   int64_t value, std::chrono::milliseconds ttl);
+::hurricache::ContainerGetRequest buildContainerGetRequestProto(const Key& key, const KeyHint& hint, int32_t clientId,
+                                                                 const Key& elementKey);
+::hurricache::KeyPositionRequest buildPositionRequestProto(const Key& key, const KeyHint& hint, int32_t clientId, int32_t pos);
 
 Key *keyRequestToKey(const ::hurricache::Key &request,KeyHint* hint=nullptr);
 OrderedKey *keyRequestToKey(const ::hurricache::OrderedKey &request,KeyHint* hint=nullptr);
 
 OrderedValue *valueRequestToOrderedValue(const ::hurricache::OrderedValue &request);
 Value *valueRequestToValue(const ::hurricache::Value &request);
+
+
 
 
 struct RpcCallDataBase {
@@ -22,23 +37,23 @@ struct RpcCallDataBase {
 
 template<typename ResponseType, typename ResultType>
 struct RpcCallData : public RpcCallDataBase{
-    std::promise<ResultType> promise; // Обещание, которое резолвит будущее (std::future) для пользователя
-    ResponseType response; // Сюда gRPC запишет ответ от сервера, когда он придет
-    grpc::ClientContext context; // Контекст gRPC (включая таймауты, дедлайны и метаданные)
-    grpc::Status status; // Статус выполнения запроса (успех/ошибка gRPC)
+    std::promise<ResultType> promise;
+    ResponseType response;
+    grpc::ClientContext context;
+    grpc::Status status;
 
-    // Функция-трансформер для распаковки или конвертации gRPC-ответа в нужный тип
     std::function<ResultType(ResponseType &)> transformer;
 
-    // Этот метод вызывается фоновым потоком, когда событие вытаскивается из cq_.Next()
     void Proceed(bool ok) {
         if (ok && status.ok()) {
             try {
-                if (transformer) {
+                if constexpr (std::is_same_v<ResultType, ResponseType>) {
+                    promise.set_value(std::move(response));
+                } else if (transformer) {
                     promise.set_value(transformer(response));
                 } else {
-                    // Если трансформатор не задан (когда ResultType == ResponseType)
-                    promise.set_value(std::move(response));
+                    promise.set_exception(std::make_exception_ptr(
+                        std::runtime_error("Transformer not set for non-matching types")));
                 }
             } catch (...) {
                 promise.set_exception(std::current_exception());
@@ -48,7 +63,7 @@ struct RpcCallData : public RpcCallDataBase{
                                   ", Message: " + status.error_message();
             promise.set_exception(std::make_exception_ptr(std::runtime_error(err_msg)));
         }
-        delete this; // Самоуничтожение объекта после завершения работы с запросом
+        delete this;
     }
 };
 
@@ -58,34 +73,28 @@ struct StreamCallData : public RpcCallDataBase {
     std::promise<ResultType> promise;
     grpc::ClientContext context;
     grpc::Status status;
-    std::unique_ptr<grpc::ClientAsyncReader<ResponseChunkType>> reader;
+    std::unique_ptr<grpc::ClientAsyncReaderInterface<ResponseChunkType>> reader;
 
     ResponseChunkType current_chunk;
-    ResultType accumulated_result; // Например, std::vector<Payload>
+    ResultType accumulated_result;
 
-    // Состояние автомата для стрима
     enum class State { READING, FINISHING };
     State state = State::READING;
 
-    // Функция для конвертации/добавления чанка в итоговый результат
     std::function<void(ResultType&, ResponseChunkType&)> chunk_accumulator;
 
     void Proceed(bool ok) override {
         if (state == State::READING) {
             if (ok) {
-                // Успешно прочитали очередную порцию данных из стрима
                 if (chunk_accumulator) {
                     chunk_accumulator(accumulated_result, current_chunk);
                 }
-                // Запрашиваем чтение следующего элемента стрима
                 reader->Read(&current_chunk, this);
             } else {
-                // ok == false означает, что сервер закончил отправку данных (EOF)
                 state = State::FINISHING;
                 reader->Finish(&status, this);
             }
         } else if (state == State::FINISHING) {
-            // Стрим полностью завершен, проверяем статус gRPC
             if (status.ok()) {
                 promise.set_value(std::move(accumulated_result));
             } else {
@@ -93,11 +102,10 @@ struct StreamCallData : public RpcCallDataBase {
                                       ", Message: " + status.error_message();
                 promise.set_exception(std::make_exception_ptr(std::runtime_error(err_msg)));
             }
-            delete this; // Самоуничтожение объекта
+            delete this;
         }
     }
 };
-
 
 
 #endif //HURRICACHE_CPP_CLIENT_UTILS_HXX

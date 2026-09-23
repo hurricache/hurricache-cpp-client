@@ -2,8 +2,82 @@
 // Created by alex on 22.09.2026.
 //
 #include <utils.hxx>
-
 #include "compression.hxx"
+
+// =========================================================================
+// Proto builders (used by standalone client)
+// =========================================================================
+
+::hurricache::Key buildKeyProto(const Key& key, const KeyHint& hint, int32_t clientId) {
+    ::hurricache::Key proto_key;
+    auto* payload = proto_key.mutable_payload();
+    payload->set_size(key.size);
+    payload->mutable_payload()->assign(key.data, key.size);
+
+    if (hint.strong_hash != 0 || hint.weak_hash != 0) {
+        auto* key_hint = proto_key.mutable_keyhint();
+        key_hint->set_week_hash(hint.weak_hash);
+        key_hint->set_strong_hash(hint.strong_hash);
+    }
+    proto_key.set_clientid(clientId);
+    return proto_key;
+}
+
+::hurricache::GetRequest buildGetRequestProto(const Key& key, const KeyHint& hint, int32_t clientId) {
+    ::hurricache::GetRequest request;
+    *request.mutable_key() = buildKeyProto(key, hint, clientId);
+    return request;
+}
+
+::hurricache::Value buildValueProto(const Value& value, std::chrono::milliseconds ttl, int32_t clientId) {
+    ::hurricache::Value proto_value;
+    auto* payload = proto_value.mutable_value();
+    payload->set_size(static_cast<uint32_t>(value.size));
+    payload->set_payload(absl::string_view(value.data, static_cast<size_t>(value.size)));
+
+    if (ttl.count() > 0) {
+        auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        proto_value.set_ttl(static_cast<uint64_t>(now_ms) + static_cast<uint64_t>(ttl.count()));
+    }
+
+    auto* lock_info = proto_value.mutable_lock_info();
+    lock_info->set_type(static_cast<hurricache::LockType>(NO_LOCK));
+    lock_info->set_lockedby(clientId);
+
+    return proto_value;
+}
+
+::hurricache::AtomicCreate buildAtomicCreateProto(const Key& key, const KeyHint& hint, int32_t clientId,
+                                                   int64_t value, std::chrono::milliseconds ttl) {
+    hurricache::AtomicCreate request;
+    *request.mutable_key() = buildKeyProto(key, hint, clientId);
+    auto* av = request.mutable_val();
+    av->set_val(value);
+    if (ttl.count() > 0) {
+        auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        request.set_ttl(static_cast<uint64_t>(now_ms) + static_cast<uint64_t>(ttl.count()));
+    }
+    return request;
+}
+
+::hurricache::ContainerGetRequest buildContainerGetRequestProto(const Key& key, const KeyHint& hint, int32_t clientId,
+                                                                 const Key& elementKey) {
+    hurricache::ContainerGetRequest request;
+    *request.mutable_key() = buildKeyProto(key, hint, clientId);
+    auto* ek = request.mutable_element_key();
+    ek->mutable_payload()->set_size(elementKey.size);
+    ek->mutable_payload()->mutable_payload()->assign(elementKey.data, elementKey.size);
+    return request;
+}
+
+::hurricache::KeyPositionRequest buildPositionRequestProto(const Key& key, const KeyHint& hint, int32_t clientId, int32_t pos) {
+    hurricache::KeyPositionRequest request;
+    *request.mutable_key() = buildKeyProto(key, hint, clientId);
+    request.set_pos(static_cast<uint64_t>(pos));
+    return request;
+}
 
 
 Key *keyRequestToKey(const ::hurricache::Key &request,KeyHint* hint) {
