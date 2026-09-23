@@ -6,13 +6,22 @@
 #include <string>
 #include <cstring>
 #include <cstdlib>
+#include <random>
 #include "standalone_client.hxx"
 
 namespace test_base {
-    // Helper to create Key from string
+    // Thread-local random generator for unique key suffixes
+    static std::string make_unique_suffix() {
+        thread_local std::mt19937 gen(std::random_device{}());
+        thread_local std::uniform_int_distribution<uint64_t> dist(100000, 999999);
+        return std::to_string(dist(gen));
+    }
+
+    // Helper to create Key from string (with unique suffix to avoid conflicts)
     static Key make_key(const std::string &str) {
-        auto size = static_cast<uint32_t>(str.size());
-        auto data = const_cast<char *>(str.c_str());
+        std::string unique_key = str + "_" + make_unique_suffix();
+        auto size = static_cast<uint32_t>(unique_key.size());
+        auto data = const_cast<char *>(unique_key.c_str());
         return Key(size, data);
     }
 
