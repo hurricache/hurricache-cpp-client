@@ -8,14 +8,14 @@
 // Proto builders (used by standalone client)
 // =========================================================================
 
-::hurricache::Key buildKeyProto(const Key& key, const KeyHint* hint, int32_t clientId) {
+::hurricache::Key buildKeyProto(const Key &key, const KeyHint *hint, int32_t clientId) {
     ::hurricache::Key proto_key;
-    auto* payload = proto_key.mutable_payload();
+    auto *payload = proto_key.mutable_payload();
     payload->set_size(key.size);
     payload->mutable_payload()->assign(key.data, key.size);
 
     if (hint != nullptr) {
-        auto* key_hint = proto_key.mutable_keyhint();
+        auto *key_hint = proto_key.mutable_keyhint();
         key_hint->set_week_hash(hint->weak_hash);
         key_hint->set_strong_hash(hint->strong_hash);
     }
@@ -23,15 +23,15 @@
     return proto_key;
 }
 
-::hurricache::GetRequest buildGetRequestProto(const Key& key, const KeyHint* hint, int32_t clientId) {
+::hurricache::GetRequest buildGetRequestProto(const Key &key, const KeyHint *hint, int32_t clientId) {
     ::hurricache::GetRequest request;
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
     return request;
 }
 
-::hurricache::Value buildValueProto(const Value& value, std::chrono::milliseconds ttl, int32_t clientId) {
+::hurricache::Value buildValueProto(const Value &value, std::chrono::milliseconds ttl, int32_t clientId) {
     ::hurricache::Value proto_value;
-    auto* payload = proto_value.mutable_value();
+    auto *payload = proto_value.mutable_value();
     payload->set_size(static_cast<uint32_t>(value.size));
     payload->set_payload(absl::string_view(value.data, static_cast<size_t>(value.size)));
 
@@ -41,18 +41,18 @@
         proto_value.set_ttl(static_cast<uint64_t>(now_ms) + static_cast<uint64_t>(ttl.count()));
     }
 
-    auto* lock_info = proto_value.mutable_lock_info();
+    auto *lock_info = proto_value.mutable_lock_info();
     lock_info->set_type(static_cast<hurricache::LockType>(NO_LOCK));
     lock_info->set_lockedby(clientId);
 
     return proto_value;
 }
 
-::hurricache::AtomicCreate buildAtomicCreateProto(const Key& key, const KeyHint* hint, int32_t clientId,
-                                                   int64_t value, std::chrono::milliseconds ttl) {
+::hurricache::AtomicCreate buildAtomicCreateProto(const Key &key, const KeyHint *hint, int32_t clientId,
+                                                  int64_t value, std::chrono::milliseconds ttl) {
     hurricache::AtomicCreate request;
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
-    auto* av = request.mutable_val();
+    auto *av = request.mutable_val();
     av->set_val(value);
     if (ttl.count() > 0) {
         auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -62,17 +62,18 @@
     return request;
 }
 
-::hurricache::ContainerGetRequest buildContainerGetRequestProto(const Key& key, const KeyHint* hint, int32_t clientId,
-                                                                 const Key& elementKey) {
+::hurricache::ContainerGetRequest buildContainerGetRequestProto(const Key &key, const KeyHint *hint, int32_t clientId,
+                                                                const Key &elementKey) {
     hurricache::ContainerGetRequest request;
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
-    auto* ek = request.mutable_element_key();
+    auto *ek = request.mutable_element_key();
     ek->mutable_payload()->set_size(elementKey.size);
     ek->mutable_payload()->mutable_payload()->assign(elementKey.data, elementKey.size);
     return request;
 }
 
-::hurricache::KeyPositionRequest buildPositionRequestProto(const Key& key, const KeyHint* hint, int32_t clientId, int32_t pos) {
+::hurricache::KeyPositionRequest buildPositionRequestProto(const Key &key, const KeyHint *hint, int32_t clientId,
+                                                           int32_t pos) {
     hurricache::KeyPositionRequest request;
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
     request.set_pos(static_cast<uint64_t>(pos));
@@ -80,7 +81,7 @@
 }
 
 
-Key *keyRequestToKey(const ::hurricache::Key &request,KeyHint* hint) {
+Key *keyRequestToKey(const ::hurricache::Key &request, KeyHint *hint) {
     if (!request.has_payload()) [[unlikely]] {
         return nullptr;
     }
@@ -123,7 +124,7 @@ Key *keyRequestToKey(const ::hurricache::Key &request,KeyHint* hint) {
 }
 
 
-OrderedKey *keyRequestToKey(const ::hurricache::OrderedKey &request,KeyHint* hint) {
+OrderedKey *keyRequestToKey(const ::hurricache::OrderedKey &request, KeyHint *hint) {
     uint32_t size = 0;
     uint32_t _strong_hash = UINT32_MAX;
     uint32_t _weak_hash = UINT32_MAX;
@@ -310,7 +311,6 @@ ValuePtr valueRequestToValue(const ::hurricache::Value &request) {
                     delete []buff;
                     _size = _rawSize;
                     buff = raw;
-
                 } else {
                     delete []buff;
                     return nullptr;
@@ -332,9 +332,9 @@ ValuePtr valueRequestToValue(const ::hurricache::Value &request) {
 }
 
 hurricache::CreateContainerRequest buildContainerRequest(
-    const Key& key, const KeyHint* hint, int32_t clientId,
+    const Key &key, const KeyHint *hint, int32_t clientId,
     hurricache::ContainerType type, std::chrono::milliseconds ttl,
-    const std::vector<ValuePtr>* values) {
+    const std::vector<ValuePtr> *values) {
     hurricache::CreateContainerRequest request;
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
     request.set_type(type);
@@ -344,20 +344,19 @@ hurricache::CreateContainerRequest buildContainerRequest(
             std::chrono::system_clock::now().time_since_epoch()).count();
         request.set_ttl(static_cast<uint64_t>(now_ms) + static_cast<uint64_t>(ttl.count()));
     }
-
-    for (const auto& v : *values) {
-        *request.add_value_unordered() = buildValueProtoNoTtl(v, clientId);
+    if (values != nullptr) {
+        for (const auto &v: *values) {
+            *request.add_value_unordered() = buildValueProtoNoTtl(v, clientId);
+        }
     }
-
     return request;
 }
 
 
-
 hurricache::CreateContainerRequest buildContainerRequestOrdered(
-    const Key& key, const KeyHint* hint, int32_t clientId,
+    const Key &key, const KeyHint *hint, int32_t clientId,
     hurricache::ContainerType type, std::chrono::milliseconds ttl,
-    const std::vector<OrderedValuePtr>* values) {
+    const std::vector<OrderedValuePtr> *values) {
     hurricache::CreateContainerRequest request;
     auto effective_hint = hint == nullptr ? calculateKeyHint(key) : hint;
     *request.mutable_key() = buildKeyProto(key, effective_hint, clientId);
@@ -369,10 +368,10 @@ hurricache::CreateContainerRequest buildContainerRequestOrdered(
         request.set_ttl(static_cast<uint64_t>(now_ms) + static_cast<uint64_t>(ttl.count()));
     }
 
-    for (const auto& val : *values) {
-        auto* ordered_val = request.add_value_ordered();
+    for (const auto &val: *values) {
+        auto *ordered_val = request.add_value_ordered();
         ordered_val->set_order(val->weight);
-        auto* ov_val = ordered_val->mutable_value();
+        auto *ov_val = ordered_val->mutable_value();
         ov_val->set_size(static_cast<uint32_t>(val->size));
         ov_val->set_payload(absl::string_view(val->data, static_cast<size_t>(val->size)));
     }
