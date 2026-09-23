@@ -8,35 +8,60 @@
 #include <cache.grpc.pb.h>
 #include <future>
 #include <chrono>
+#include "hashes.hxx"
 
-::hurricache::Key buildKeyProto(const Key& key, const KeyHint& hint, int32_t clientId);
-::hurricache::GetRequest buildGetRequestProto(const Key& key, const KeyHint& hint, int32_t clientId);
+inline KeyHint *calculateKeyHint(const Key &key) {
+    if (key.data && key.size > 0) {
+        return new KeyHint{week_hash(key.data, key.size), strong_hash(key.data, key.size)};
+    }
+    return nullptr;
+}
+
+
+::hurricache::Key buildKeyProto(const Key &key, const KeyHint *hint, int32_t clientId);
+
+::hurricache::GetRequest buildGetRequestProto(const Key &key, const KeyHint *hint, int32_t clientId);
+
 ::hurricache::Value buildValueProto(const Value& value, std::chrono::milliseconds ttl, int32_t clientId);
+
+::hurricache::AtomicCreate buildAtomicCreateProto(const Key &key, const KeyHint *hint, int32_t clientId,
+                                                  int64_t value, std::chrono::milliseconds ttl);
+
+::hurricache::ContainerGetRequest buildContainerGetRequestProto(const Key &key, const KeyHint *hint,
+                                                                int32_t clientId,
+                                                                const Key &elementKey);
+
+::hurricache::KeyPositionRequest buildPositionRequestProto(const Key &key, const KeyHint *hint, int32_t clientId,
+                                                           int32_t pos);
+
+inline ::hurricache::Value buildValueProtoNoTtl(const ValuePtr value, int32_t clientId) {
+    return buildValueProto(*value, std::chrono::milliseconds{0}, clientId);
+}
+
 inline ::hurricache::Value buildValueProtoNoTtl(const Value& value, int32_t clientId) {
     return buildValueProto(value, std::chrono::milliseconds{0}, clientId);
 }
-::hurricache::AtomicCreate buildAtomicCreateProto(const Key& key, const KeyHint& hint, int32_t clientId,
-                                                   int64_t value, std::chrono::milliseconds ttl);
-::hurricache::ContainerGetRequest buildContainerGetRequestProto(const Key& key, const KeyHint& hint, int32_t clientId,
-                                                                 const Key& elementKey);
-::hurricache::KeyPositionRequest buildPositionRequestProto(const Key& key, const KeyHint& hint, int32_t clientId, int32_t pos);
-
-Key *keyRequestToKey(const ::hurricache::Key &request,KeyHint* hint=nullptr);
-OrderedKey *keyRequestToKey(const ::hurricache::OrderedKey &request,KeyHint* hint=nullptr);
-
-OrderedValue *valueRequestToOrderedValue(const ::hurricache::OrderedValue &request);
-Value *valueRequestToValue(const ::hurricache::Value &request);
 
 
+KeyPtr keyRequestToKey(const ::hurricache::Key &request, KeyHint *hint = nullptr);
+
+OrderedKeyPtr keyRequestToKey(const ::hurricache::OrderedKey &request, KeyHint *hint = nullptr);
+
+OrderedValuePtr valueRequestToOrderedValue(const ::hurricache::OrderedValue &request);
+
+ValuePtr valueRequestToValue(const ::hurricache::Value &request);
 
 
 struct RpcCallDataBase {
     virtual ~RpcCallDataBase() = default;
+
     virtual void Proceed(bool ok) = 0;
 };
 
-template<typename ResponseType, typename ResultType>
-struct RpcCallData : public RpcCallDataBase{
+template
+<
+    typename ResponseType, typename ResultType>
+struct RpcCallData : public RpcCallDataBase {
     std::promise<ResultType> promise;
     ResponseType response;
     grpc::ClientContext context;
@@ -44,7 +69,7 @@ struct RpcCallData : public RpcCallDataBase{
 
     std::function<ResultType(ResponseType &)> transformer;
 
-    void Proceed(bool ok) {
+    void Proceed(bool ok) override {
         if (ok && status.ok()) {
             try {
                 if constexpr (std::is_same_v<ResultType, ResponseType>) {
@@ -68,20 +93,23 @@ struct RpcCallData : public RpcCallDataBase{
 };
 
 
-template <typename ResponseChunkType, typename ResultType>
+template
+<
+    typename ResponseChunkType, typename ResultType>
 struct StreamCallData : public RpcCallDataBase {
     std::promise<ResultType> promise;
     grpc::ClientContext context;
     grpc::Status status;
-    std::unique_ptr<grpc::ClientAsyncReaderInterface<ResponseChunkType>> reader;
+    std::unique_ptr<grpc::ClientAsyncReaderInterface<ResponseChunkType> > reader;
 
     ResponseChunkType current_chunk;
     ResultType accumulated_result;
 
     enum class State { READING, FINISHING };
+
     State state = State::READING;
 
-    std::function<void(ResultType&, ResponseChunkType&)> chunk_accumulator;
+    std::function<void(ResultType &, ResponseChunkType &)> chunk_accumulator;
 
     void Proceed(bool ok) override {
         if (state == State::READING) {
@@ -107,5 +135,14 @@ struct StreamCallData : public RpcCallDataBase {
     }
 };
 
+hurricache::CreateContainerRequest buildContainerRequest(
+    const Key& key, const KeyHint* hint, int32_t clientId,
+    hurricache::ContainerType type, std::chrono::milliseconds ttl,
+    const std::vector<ValuePtr>* values);
+
+hurricache::CreateContainerRequest buildContainerRequestOrdered(
+    const Key& key, const KeyHint* hint, int32_t clientId,
+    hurricache::ContainerType type, std::chrono::milliseconds ttl,
+    const std::vector<OrderedValuePtr>* values);
 
 #endif //HURRICACHE_CPP_CLIENT_UTILS_HXX

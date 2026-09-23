@@ -23,6 +23,20 @@ inline void print_data_safely(std::ostream &os, const char *data, uint32_t size)
     os << "\"}";
 }
 
+Key::~Key() {
+    if (data != nullptr) {
+        delete [] data;
+        data = nullptr;
+    }
+}
+
+Value::~Value() {
+    if (data != nullptr) {
+        delete [] data;
+        data = nullptr;
+    }
+}
+
 std::ostream &operator<<(std::ostream &os, const Key &obj) {
     print_data_safely(os, obj.data, obj.size);
     return os;

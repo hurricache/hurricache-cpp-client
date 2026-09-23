@@ -14,6 +14,7 @@
 struct KeyHint {
     uint32_t weak_hash;
     uint32_t strong_hash;
+
 };
 std::ostream &operator<<(std::ostream &os, const KeyHint &obj);
 
@@ -21,11 +22,22 @@ std::ostream &operator<<(std::ostream &os, const KeyHint &obj);
 struct Key {
     uint32_t size;
     char *data;
-    
+
+    ~Key();
+
     bool operator<(const Key& other) const {
         int cmp = memcmp(data, other.data, std::min(size, other.size));
         if (cmp != 0) return cmp < 0;
         return size < other.size;
+    }
+
+    friend bool operator==(const Key &lhs, const Key &rhs) {
+        return lhs.size == rhs.size
+               && memcmp (lhs.data, rhs.data,lhs.size) == 0;
+    }
+
+    friend bool operator!=(const Key &lhs, const Key &rhs) {
+        return !(lhs == rhs);
     }
 };
 std::ostream &operator<<(std::ostream &os, const Key &obj);
@@ -33,7 +45,21 @@ std::ostream &operator<<(std::ostream &os, const Key &obj);
 struct Value {
     uint64_t size;
     char *data;
+
+    ~Value();
+
+    friend bool operator==(const Value &lhs, const Value &rhs) {
+        return lhs.size == rhs.size
+            && memcmp (lhs.data, rhs.data,lhs.size) == 0;
+    }
+
+    friend bool operator!=(const Value &lhs, const Value &rhs) {
+        return !(lhs == rhs);
+    }
 };
+
+typedef Value* ValuePtr;
+typedef Key* KeyPtr;
 
 std::ostream &operator<<(std::ostream &os, const Value &obj);
 
@@ -58,7 +84,9 @@ struct Ordered : public ELEM{
 };
 
 using OrderedValue = Ordered<Value>;
+using OrderedValuePtr = OrderedValue*;
 using OrderedKey = Ordered<Key>;
+using OrderedKeyPtr = OrderedKey*;
 
 enum LockType : uint8_t {
     NO_LOCK = 0,

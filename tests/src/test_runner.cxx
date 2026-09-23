@@ -34,9 +34,8 @@ int main(int argc, char* argv[]) {
         // Test basic connectivity first
         std::cout << "Testing basic connectivity... ";
         Key test_key = test_base::make_key("connectivity_test");
-        KeyHint test_hint = test_base::make_hint();
         
-        auto exist_future = client.existKey(test_key, test_hint, 0, std::chrono::milliseconds(2000));
+        auto exist_future = client.existKey(test_key);
         try {
             bool exists = exist_future.get();
             std::cout << "OK (key exists=" << exists << ")\n\n";

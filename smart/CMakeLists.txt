@@ -10,8 +10,8 @@ file(MAKE_DIRECTORY "${COORD_GEN_DIR}")
 set(COORD_PROTO_SRCS
         "${COORD_GEN_DIR}/coordinator.pb.cc"
         "${COORD_GEN_DIR}/coordinator.pb.h"
-        "${COORD_GEN_DIR}/coordinator_grpc.pb.cc"
-        "${COORD_GEN_DIR}/coordinator_grpc.pb.h"
+        "${COORD_GEN_DIR}/coordinator.grpc.pb.cc"
+        "${COORD_GEN_DIR}/coordinator.grpc.pb.h"
 )
 
 # Генерация файлов из coordinator.proto

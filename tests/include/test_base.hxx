@@ -17,11 +17,8 @@ namespace test_base {
     }
 
     // Helper to create Value from string
-    static Value make_value(const std::string &str) {
-        Value value{};
-        value.size = static_cast<uint64_t>(str.size());
-        value.data = const_cast<char*>(str.c_str());
-        return value;
+    static ValuePtr make_value(const std::string &str) {
+        return new Value{static_cast<uint64_t>(str.size()),const_cast<char*>(str.c_str())};
     }
 
     // Helper to create KeyHint
@@ -30,5 +27,9 @@ namespace test_base {
         hint.weak_hash = weak;
         hint.strong_hash = strong;
         return hint;
+    }
+
+    static std::shared_ptr<KeyHint> create_hint(uint32_t weak = 0, uint32_t strong = 0) {
+        return std::make_shared<KeyHint>(weak, strong);
     }
 }
