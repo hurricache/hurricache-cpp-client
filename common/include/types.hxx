@@ -23,7 +23,16 @@ struct Key {
     uint32_t size;
     char *data;
 
+    Key();
+
+    Key(uint32_t src_size, const char *src_data);
+
+    Key(const char *src_data, uint32_t src_size);
+
     ~Key();
+    Key(const Key &) = delete;
+    Key& operator=(const Key &) = delete;
+
 
     bool operator<(const Key& other) const {
         int cmp = memcmp(data, other.data, std::min(size, other.size));
@@ -46,7 +55,15 @@ struct Value {
     uint64_t size;
     char *data;
 
+    Value();
+
+    Value(const char *src_data, uint64_t src_size);
+
+    Value(Value &&other) noexcept;
+
     ~Value();
+    Value(const Value &) = delete;
+    Value& operator=(const Value &) = delete;
 
     friend bool operator==(const Value &lhs, const Value &rhs) {
         return lhs.size == rhs.size

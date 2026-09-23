@@ -239,7 +239,10 @@ OrderedValuePtr valueRequestToOrderedValue(const ::hurricache::OrderedValue &req
     }
 
     if (success && buff != nullptr) [[likely]] {
-        auto val = new OrderedValue{order, _size, buff};
+        auto val = new OrderedValue();
+        val->weight = order;
+        val->size = _size;
+        val->data = buff;
         return val;
     }
 
@@ -324,7 +327,9 @@ ValuePtr valueRequestToValue(const ::hurricache::Value &request) {
     }
 
     if (success && buff != nullptr) [[likely]] {
-        auto val = new Value{_size, buff};
+        auto val = new Value();
+        val->data = buff;
+        val->size = _size;
         return val;
     }
 

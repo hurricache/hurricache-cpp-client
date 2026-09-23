@@ -7,18 +7,16 @@
 #include "standalone_client.hxx"
 
 namespace test_base {
-
     // Helper to create Key from string
     static Key make_key(const std::string &str) {
-        Key key{};
-        key.size = static_cast<uint32_t>(str.size());
-        key.data = const_cast<char*>(str.c_str());
-        return key;
+        auto size = static_cast<uint32_t>(str.size());
+        auto data = const_cast<char *>(str.c_str());
+        return Key(size, data);
     }
 
     // Helper to create Value from string
     static ValuePtr make_value(const std::string &str) {
-        return new Value{static_cast<uint64_t>(str.size()),const_cast<char*>(str.c_str())};
+        return new Value(const_cast<char *>(str.c_str()), static_cast<uint64_t>(str.size()));
     }
 
     // Helper to create KeyHint

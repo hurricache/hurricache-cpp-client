@@ -143,7 +143,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getAndDeleteValue(const Key &ke
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetAndDeleteValue,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value{0, nullptr};
+                return new Value();
             }
             return valueRequestToValue(resp.value_unordered());
         });
@@ -177,7 +177,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getValue(const Key &key, const 
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetValue,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value{0, nullptr};
+                return new Value();
             }
             return valueRequestToValue(resp.value_unordered());
         });
@@ -196,7 +196,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::updateKeyValue(const Key &key, 
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncupdateValue,
         [](hurricache::UpdateValueResponse &resp) -> ValuePtr {
             if (!resp.has_value()) {
-                return new Value{0, nullptr};
+                return new Value();
             }
             return valueRequestToValue(resp.value());
         });
@@ -375,7 +375,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getHead(const Key &key, const K
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetHead,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value{0, nullptr};
+                return new Value();
             }
             return valueRequestToValue(resp.value_unordered());
         });
@@ -389,7 +389,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getTail(const Key &key, const K
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetTail,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value{0, nullptr};
+                return new Value();
             }
             return valueRequestToValue(resp.value_unordered());
         });
@@ -409,7 +409,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getElementAtPosition(const Key 
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetElementAtPosition,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value{0, nullptr};
+                return new Value();
             }
             return valueRequestToValue(resp.value_unordered());
         });
@@ -433,7 +433,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getAndRemoveFront(const Key &ke
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetAndRemoveFront,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value{0, nullptr};
+                return new Value();
             }
             return valueRequestToValue(resp.value_unordered());
         });
@@ -447,7 +447,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getAndRemoveTail(const Key &key
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetAndRemoveTail,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value{0, nullptr};
+                return new Value();
             }
             return valueRequestToValue(resp.value_unordered());
         });
@@ -462,7 +462,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getAndRemoveElementAtPosition(c
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetAndRemoveElementAtPosition,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value{0, nullptr};
+                return new Value();
             }
             return valueRequestToValue(resp.value_unordered());
         });
@@ -537,22 +537,23 @@ std::future<std::vector<OrderedValuePtr> > FastCacheStandaloneClient::streamOrde
         });
 }
 
-std::future<std::map<OrderedKey, Value> > FastCacheStandaloneClient::streamOrderedMap(
+std::future<std::map<OrderedKeyPtr, ValuePtr> > FastCacheStandaloneClient::streamOrderedMap(
     const Key &key, const KeyHint *hint,
     int32_t clientId,
     std::chrono::milliseconds timeout) {
-    return SendAsyncStreamRequest<hurricache::GetRequest, hurricache::BatchValueResponse, std::map<OrderedKey, Value> >(
+    return SendAsyncStreamRequest<hurricache::GetRequest, hurricache::BatchValueResponse, std::map<OrderedKeyPtr, ValuePtr> >(
         buildGetRequestProto(key, hint, clientId), timeout,
         &hurricache::HurriCacheGrpcService::StubInterface::PrepareAsyncgetContainer,
-        [](std::map<OrderedKey, Value> &result, hurricache::BatchValueResponse &chunk) {
+        [](std::map<OrderedKeyPtr, ValuePtr> &result, hurricache::BatchValueResponse &chunk) {
             int count = std::min(chunk.key_ordered_size(), chunk.value_unordered_size());
             for (int i = 0; i < count; ++i) {
                 KeyHint kh;
-                OrderedKey *ok = keyRequestToKey(chunk.key_ordered(i), &kh);
-                Value *v = valueRequestToValue(chunk.value_unordered(i));
-                if (ok && v) result[*ok] = *v;
-                delete ok;
-                delete v;
+                OrderedKeyPtr ok = keyRequestToKey(chunk.key_ordered(i), &kh);
+                ValuePtr v = valueRequestToValue(chunk.value_unordered(i));
+                if (ok && v) {
+                    result.emplace(ok,v);
+                }
+
             }
         });
 }
@@ -1022,7 +1023,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getContainerValue(const Key &ke
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetValueInContainer,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value{0, nullptr};
+                return new Value();
             }
             return valueRequestToValue(resp.value_unordered());
         });
@@ -1037,7 +1038,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getAndRemoveContainerValue(cons
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetAndDeleteValueInContainer,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value{0, nullptr};
+                return new Value();
             }
             return valueRequestToValue(resp.value_unordered());
         });
@@ -1068,7 +1069,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::updateContainerValue(const Key 
         request, timeout, &hurricache::HurriCacheGrpcService::StubInterface::AsyncupdateValueInContainer,
         [](hurricache::UpdateValueResponse &resp) -> ValuePtr {
             if (!resp.has_value()) {
-                return new Value{0, nullptr};
+                return new Value();
             }
             return valueRequestToValue(resp.value());
         });
@@ -1089,10 +1090,12 @@ std::future<int32_t> FastCacheStandaloneClient::addElementHashMap(const Key &key
                                                                   const std::vector<ValuePtr> *container_values,
                                                                   int32_t clientId, std::chrono::milliseconds timeout) {
     hurricache::AddToRequest request;
-    *request.mutable_key() = buildKeyProto(key, hint, clientId);
+    auto effective_hint = hint == nullptr ? calculateKeyHint(key) : hint;
+    *request.mutable_key() = buildKeyProto(key, effective_hint, clientId);
     request.set_type(hurricache::ContainerType::MAP);
     if (container_keys != nullptr && container_values != nullptr) {
-    for (size_t i = 0; i < container_keys->size(); ++i) {
+        auto size = std::min(container_keys->size(),container_values->size());
+        for (size_t i = 0; i < size; ++i) {
         auto *pk = request.add_key_unordered();
         pk->mutable_payload()->set_size(container_keys->at(i)->size);
         pk->mutable_payload()->mutable_payload()->assign(container_keys->at(i)->data, container_keys->at(i)->size);
@@ -1110,10 +1113,12 @@ std::future<int32_t> FastCacheStandaloneClient::addElementOrderedMap(const Key &
                                                                      int32_t clientId,
                                                                      std::chrono::milliseconds timeout) {
     hurricache::AddToRequest request;
-    *request.mutable_key() = buildKeyProto(key, hint, clientId);
+    auto effective_hint = hint == nullptr ? calculateKeyHint(key) : hint;
+    *request.mutable_key() = buildKeyProto(key, effective_hint, clientId);
     request.set_type(hurricache::ContainerType::ORDERED_MAP);
     if (container_keys != nullptr && container_values != nullptr) {
-        for (size_t i = 0; i < container_keys->size(); ++i) {
+        auto size = std::min(container_keys->size(), container_values->size());
+        for (size_t i = 0; i < size; ++i) {
             auto *pk = request.add_key_ordered();
             pk->mutable_payload()->set_size(container_keys->at(i)->size);
             pk->mutable_payload()->mutable_payload()->assign(container_keys->at(i)->data, container_keys->at(i)->size);

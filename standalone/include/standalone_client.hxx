@@ -195,7 +195,7 @@ public:
         const Key &key, const KeyHint *hint = nullptr, int32_t clientId = 0,
         std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<std::map<OrderedKey, Value> > streamOrderedMap(
+    [[nodiscard]] std::future<std::map<OrderedKeyPtr, ValuePtr> > streamOrderedMap(
         const Key &key, const KeyHint *hint = nullptr, int32_t clientId = 0,
         std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
@@ -470,12 +470,9 @@ private:
         if (effectiveTimeout.count() > 0) {
             call->context.set_deadline(std::chrono::system_clock::now() + effectiveTimeout);
         }
-
-        // 1. Создаем асинхронный ридер через вызов метода стаба
         call->reader = (asyncStub_.get()->*grpc_method_ptr)(&call->context, request, &cq_);
 
-        // 2. Запрашиваем чтение первого элемента (дальше цепочка замкнется в Proceed)
-        call->reader->Read(&call->current_chunk, call);
+        call->reader->StartCall(call);
 
         return future;
     }

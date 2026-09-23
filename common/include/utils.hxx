@@ -22,7 +22,7 @@ inline KeyHint *calculateKeyHint(const Key &key) {
 
 ::hurricache::GetRequest buildGetRequestProto(const Key &key, const KeyHint *hint, int32_t clientId);
 
-::hurricache::Value buildValueProto(const Value& value, std::chrono::milliseconds ttl, int32_t clientId);
+::hurricache::Value buildValueProto(const Value &value, std::chrono::milliseconds ttl, int32_t clientId);
 
 ::hurricache::AtomicCreate buildAtomicCreateProto(const Key &key, const KeyHint *hint, int32_t clientId,
                                                   int64_t value, std::chrono::milliseconds ttl);
@@ -38,7 +38,7 @@ inline ::hurricache::Value buildValueProtoNoTtl(const ValuePtr value, int32_t cl
     return buildValueProto(*value, std::chrono::milliseconds{0}, clientId);
 }
 
-inline ::hurricache::Value buildValueProtoNoTtl(const Value& value, int32_t clientId) {
+inline ::hurricache::Value buildValueProtoNoTtl(const Value &value, int32_t clientId) {
     return buildValueProto(value, std::chrono::milliseconds{0}, clientId);
 }
 
@@ -93,32 +93,41 @@ struct RpcCallData : public RpcCallDataBase {
 };
 
 
-template
-<
-    typename ResponseChunkType, typename ResultType>
+template <typename ResponseChunkType, typename ResultType>
 struct StreamCallData : public RpcCallDataBase {
     std::promise<ResultType> promise;
     grpc::ClientContext context;
     grpc::Status status;
-    std::unique_ptr<grpc::ClientAsyncReaderInterface<ResponseChunkType> > reader;
+    std::unique_ptr<grpc::ClientAsyncReaderInterface<ResponseChunkType>> reader;
 
     ResponseChunkType current_chunk;
     ResultType accumulated_result;
 
-    enum class State { READING, FINISHING };
-
-    State state = State::READING;
+    // Добавим состояние STARTED, чтобы развести StartCall и первый Read/Finish
+    enum class State { STARTED, READING, FINISHING };
+    State state = State::STARTED;
 
     std::function<void(ResultType &, ResponseChunkType &)> chunk_accumulator;
 
     void Proceed(bool ok) override {
-        if (state == State::READING) {
+        if (state == State::STARTED) {
+            // Это срабатывает после StartCall(tag)
+            if (ok) {
+                state = State::READING;
+                reader->Read(&current_chunk, this);
+            } else {
+                state = State::FINISHING;
+                reader->Finish(&status, this);
+            }
+        } else if (state == State::READING) {
             if (ok) {
                 if (chunk_accumulator) {
                     chunk_accumulator(accumulated_result, current_chunk);
                 }
+                // Запрашиваем следующий чанк
                 reader->Read(&current_chunk, this);
             } else {
+                // Сервер закончил отправку данных (ok == false для Read означает EOF)
                 state = State::FINISHING;
                 reader->Finish(&status, this);
             }
@@ -136,13 +145,13 @@ struct StreamCallData : public RpcCallDataBase {
 };
 
 hurricache::CreateContainerRequest buildContainerRequest(
-    const Key& key, const KeyHint* hint, int32_t clientId,
+    const Key &key, const KeyHint *hint, int32_t clientId,
     hurricache::ContainerType type, std::chrono::milliseconds ttl,
-    const std::vector<ValuePtr>* values);
+    const std::vector<ValuePtr> *values);
 
 hurricache::CreateContainerRequest buildContainerRequestOrdered(
-    const Key& key, const KeyHint* hint, int32_t clientId,
+    const Key &key, const KeyHint *hint, int32_t clientId,
     hurricache::ContainerType type, std::chrono::milliseconds ttl,
-    const std::vector<OrderedValuePtr>* values);
+    const std::vector<OrderedValuePtr> *values);
 
 #endif //HURRICACHE_CPP_CLIENT_UTILS_HXX
