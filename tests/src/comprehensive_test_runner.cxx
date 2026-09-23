@@ -1,5 +1,6 @@
 //
-// Test runner for list operations
+// Comprehensive test runner for all HurriCache operations
+// Based on Java comprehensive tests
 //
 #include <iostream>
 #include "standalone_client.hxx"
@@ -24,18 +25,18 @@ int main(int argc, char* argv[]) {
         }
     }
     
-    std::cout << "HurriCache List Operations Tests" << std::endl;
-    std::cout << "Target: " << host << ":" << port << std::endl << std::endl;
+    std::cout << "HurriCache Comprehensive Tests\n";
+    std::cout << "Target: " << host << ":" << port << "\n\n";
     std::cout.flush();
     
     try {
         std::cout << "Creating client... " << std::flush;
         FastCacheStandaloneClient client(host, port);
-        std::cout << "OK" << std::endl;
+        std::cout << "OK\n";
         std::cout << "Client: " << client.toString() << "\n\n";
         
         // Test basic connectivity first
-        std::cout << "Testing basic connectivity... ";
+        std::cout << "Testing basic connectivity... " << std::flush;
         Key test_key = test_base::make_key("connectivity_test");
         
         auto exist_future = client.existKey(test_key);
@@ -46,13 +47,14 @@ int main(int argc, char* argv[]) {
             std::cout << "Connection test failed, but continuing...\n\n";
         }
         
+        // Run all test suites
         testListOperations(client);
         testQueueOperations(client);
         testVectorOperations(client);
         testSetOperations(client);
         
         client.shutdown();
-        std::cout << "\nAll tests completed!\n";
+        std::cout << "\n=== ALL COMPREHENSIVE TESTS COMPLETED! ===\n";
         
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";

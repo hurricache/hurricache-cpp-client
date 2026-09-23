@@ -19,7 +19,7 @@ static void testGetSize(FastCacheStandaloneClient &client) {
         hint.weak_hash = 0;
         hint.strong_hash = 0;
         
-        auto future = client.getSize(key, hint, 0, std::chrono::milliseconds(5000));
+        auto future = client.getSize(key, &hint, 0, std::chrono::milliseconds(5000));
         auto result = future.get();
         
         std::cout << "PASSED (getSize returned " << result << ")\n";
@@ -39,7 +39,7 @@ static void testGetHead(FastCacheStandaloneClient &client) {
         hint.weak_hash = 0;
         hint.strong_hash = 0;
         
-        auto future = client.getHead(key, hint, 0, std::chrono::milliseconds(5000));
+        auto future = client.getHead(key, &hint, 0, std::chrono::milliseconds(5000));
         auto result = future.get();
         
         std::cout << "PASSED (getHead returned value size=" << result.size << ")\n";
@@ -59,7 +59,7 @@ static void testGetTail(FastCacheStandaloneClient &client) {
         hint.weak_hash = 0;
         hint.strong_hash = 0;
         
-        auto future = client.getTail(key, hint, 0, std::chrono::milliseconds(5000));
+        auto future = client.getTail(key, &hint, 0, std::chrono::milliseconds(5000));
         auto result = future.get();
         
         std::cout << "PASSED (getTail returned value size=" << result.size << ")\n";
@@ -79,7 +79,7 @@ static void testGetElementAtPosition(FastCacheStandaloneClient &client) {
         hint.weak_hash = 0;
         hint.strong_hash = 0;
         
-        auto future = client.getElementAtPosition(key, hint, 0, 0, std::chrono::milliseconds(5000));
+        auto future = client.getElementAtPosition(key, &hint, 0, 0, std::chrono::milliseconds(5000));
         auto result = future.get();
         
         std::cout << "PASSED (getElementAtPosition returned value size=" << result.size << ")\n";
@@ -99,7 +99,7 @@ static void testGetElementWithWeight(FastCacheStandaloneClient &client) {
         hint.weak_hash = 0;
         hint.strong_hash = 0;
         
-        auto future = client.getElementWithWeight(key, hint, 0, 0, std::chrono::milliseconds(5000));
+        auto future = client.getElementWithWeight(key, &hint, 0, 0, std::chrono::milliseconds(5000));
         auto result = future.get();
         
         std::cout << "PASSED (getElementWithWeight returned value size=" << result.size << ")\n";
@@ -119,7 +119,7 @@ static void testGetAndRemoveFront(FastCacheStandaloneClient &client) {
         hint.weak_hash = 0;
         hint.strong_hash = 0;
         
-        auto future = client.getAndRemoveFront(key, hint, 0, std::chrono::milliseconds(5000));
+        auto future = client.getAndRemoveFront(key, &hint, 0, std::chrono::milliseconds(5000));
         auto result = future.get();
         
         std::cout << "PASSED (getAndRemoveFront returned value size=" << result.size << ")\n";
@@ -139,7 +139,7 @@ static void testGetAndRemoveTail(FastCacheStandaloneClient &client) {
         hint.weak_hash = 0;
         hint.strong_hash = 0;
         
-        auto future = client.getAndRemoveTail(key, hint, 0, std::chrono::milliseconds(5000));
+        auto future = client.getAndRemoveTail(key, &hint, 0, std::chrono::milliseconds(5000));
         auto result = future.get();
         
         std::cout << "PASSED (getAndRemoveTail returned value size=" << result.size << ")\n";
@@ -159,7 +159,7 @@ static void testGetAndRemoveElementAtPosition(FastCacheStandaloneClient &client)
         hint.weak_hash = 0;
         hint.strong_hash = 0;
         
-        auto future = client.getAndRemoveElementAtPosition(key, hint, 0, 0, std::chrono::milliseconds(5000));
+        auto future = client.getAndRemoveElementAtPosition(key, &hint, 0, 0, std::chrono::milliseconds(5000));
         auto result = future.get();
         
         std::cout << "PASSED (getAndRemoveElementAtPosition returned value size=" << result.size << ")\n";
@@ -179,7 +179,7 @@ static void testGetAndRemoveElementWithWeight(FastCacheStandaloneClient &client)
         hint.weak_hash = 0;
         hint.strong_hash = 0;
         
-        auto future = client.getAndRemoveElementWithWeight(key, hint, 0, 0, std::chrono::milliseconds(5000));
+        auto future = client.getAndRemoveElementWithWeight(key, &hint, 0, 0, std::chrono::milliseconds(5000));
         auto result = future.get();
         
         std::cout << "PASSED (getAndRemoveElementWithWeight returned value size=" << result.size << ")\n";

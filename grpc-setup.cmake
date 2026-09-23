@@ -10,12 +10,12 @@ set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "Force static protobuf" FORCE)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "Force PIC" FORCE)
 
 # Включаем Interprocedural Optimization (LTO) для всех подпроектов
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON CACHE BOOL "Enable LTO globally" FORCE)
-set(gRPC_ENABLE_INTERPROCEDURAL_OPTIMIZATION ON CACHE BOOL "Enable LTO for gRPC" FORCE)
+#set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON CACHE BOOL "Enable LTO globally" FORCE)
+#set(gRPC_ENABLE_INTERPROCEDURAL_OPTIMIZATION ON CACHE BOOL "Enable LTO for gRPC" FORCE)
 
 # Форсируем флаговые оптимизации для Release-сборки gRPC / Abseil / Protobuf
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native -mno-avx512f -flto=auto -fno-semantic-interposition" CACHE STRING "" FORCE)
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -march=native -mno-avx512f -flto=auto -fno-semantic-interposition" CACHE STRING "" FORCE)
+#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native -mno-avx512f -flto=auto -fno-semantic-interposition" CACHE STRING "" FORCE)
+#set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -march=native -mno-avx512f -flto=auto -fno-semantic-interposition" CACHE STRING "" FORCE)
 
 # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ:
 # Включаем инсталляцию/экспорт для Abseil, чтобы его таргеты были доступны для export-сета Protobuf.
@@ -120,7 +120,7 @@ foreach(target IN LISTS GRPC_TARGETS_TO_OPTIMIZE)
         set_target_properties(${target} PROPERTIES
                 CXX_VISIBILITY_PRESET hidden
                 VISIBILITY_INLINES_HIDDEN ON
-                INTERPROCEDURAL_OPTIMIZATION ON
+#                INTERPROCEDURAL_OPTIMIZATION ON
         )
         target_compile_definitions(${target} PRIVATE GRPC_NO_ABSL_FLAGS)
     endif()

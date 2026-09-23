@@ -53,14 +53,14 @@ public:
                                            int32_t clientId = 0,
                                            std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int64_t> getTtl(const Key &key, const KeyHint *hint,
+    [[nodiscard]] std::future<int64_t> getTtl(const Key &key, const KeyHint *hint = nullptr,
                                               int32_t clientId = 0,
                                               std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
     // =========================================================================
     // KEY-VALUE OPERATIONS
     // =========================================================================
-    [[nodiscard]] std::future<ValuePtr> getAndDeleteValue(const Key &key, const KeyHint *hint,
+    [[nodiscard]] std::future<ValuePtr> getAndDeleteValue(const Key &key, const KeyHint *hint = nullptr,
                                                           int32_t clientId = 0,
                                                           std::chrono::milliseconds timeout = std::chrono::milliseconds(
                                                               0));
@@ -146,7 +146,7 @@ public:
                                                                       std::chrono::milliseconds timeout =
                                                                               std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int32_t> getSize(const Key &key, const KeyHint *hint,
+    [[nodiscard]] std::future<int32_t> getSize(const Key &key, const KeyHint *hint = nullptr,
                                                int32_t clientId = 0,
                                                std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
@@ -264,7 +264,7 @@ public:
     // =========================================================================
     // POP & DELETION OPERATIONS
     // =========================================================================
-    [[nodiscard]] std::future<ValuePtr> getAndRemoveTail(const Key &key, const KeyHint *hint,
+    [[nodiscard]] std::future<ValuePtr> getAndRemoveTail(const Key &key, const KeyHint *hint = nullptr,
                                                          int32_t clientId = 0,
                                                          std::chrono::milliseconds timeout = std::chrono::milliseconds(
                                                              0));
@@ -303,7 +303,7 @@ public:
                                                          60000),
                                                      std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<LockStatus> unlockObject(const Key &key, const KeyHint *hint,
+    [[nodiscard]] std::future<LockStatus> unlockObject(const Key &key, const KeyHint *hint = nullptr,
                                                        int32_t clientId = 0,
                                                        std::chrono::milliseconds timeout = std::chrono::milliseconds(
                                                            0));
@@ -311,11 +311,11 @@ public:
     // =========================================================================
     // ATOMIC OPERATIONS
     // =========================================================================
-    [[nodiscard]] std::future<int64_t> atomicLoad(const Key &key, const KeyHint *hint,
+    [[nodiscard]] std::future<int64_t> atomicLoad(const Key &key, const KeyHint *hint = nullptr,
                                                   int32_t clientId = 0,
                                                   std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int64_t> atomicLoadAndDelete(const Key &key, const KeyHint *hint,
+    [[nodiscard]] std::future<int64_t> atomicLoadAndDelete(const Key &key, const KeyHint *hint= nullptr,
                                                            int32_t clientId = 0,
                                                            std::chrono::milliseconds timeout =
                                                                    std::chrono::milliseconds(0));
