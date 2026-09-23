@@ -18,11 +18,11 @@ inline KeyHint *calculateKeyHint(const Key &key) {
 }
 
 
-::hurricache::Key buildKeyProto(const Key &key, const KeyHint *hint, int32_t clientId);
+::hurricache::Key buildKeyProto(const Key &key, const KeyHint *hint, int32_t clientId,int32_t defaultCompressionThreshold = 1024);
 
-::hurricache::GetRequest buildGetRequestProto(const Key &key, const KeyHint *hint, int32_t clientId);
+::hurricache::GetRequest buildGetRequestProto(const Key &key, const KeyHint *hint, int32_t clientId,int32_t defaultCompressionThreshold=1024);
 
-::hurricache::Value buildValueProto(const Value &value, std::chrono::milliseconds ttl, int32_t clientId);
+::hurricache::Value buildValueProto(const Value &value, std::chrono::milliseconds ttl, int32_t clientId,int32_t defaultCompressionThreshold=1024);
 
 ::hurricache::AtomicCreate buildAtomicCreateProto(const Key &key, const KeyHint *hint, int32_t clientId,
                                                   int64_t value, std::chrono::milliseconds ttl);
@@ -34,12 +34,12 @@ inline KeyHint *calculateKeyHint(const Key &key) {
 ::hurricache::KeyPositionRequest buildPositionRequestProto(const Key &key, const KeyHint *hint, int32_t clientId,
                                                            int32_t pos);
 
-inline ::hurricache::Value buildValueProtoNoTtl(const ValuePtr value, int32_t clientId) {
-    return buildValueProto(*value, std::chrono::milliseconds{0}, clientId);
+inline ::hurricache::Value buildValueProtoNoTtl(const ValuePtr value, int32_t clientId,int32_t defaultCompressionThreshold=1024) {
+    return buildValueProto(*value, std::chrono::milliseconds{0}, clientId,defaultCompressionThreshold);
 }
 
-inline ::hurricache::Value buildValueProtoNoTtl(const Value &value, int32_t clientId) {
-    return buildValueProto(value, std::chrono::milliseconds{0}, clientId);
+inline ::hurricache::Value buildValueProtoNoTtl(const Value &value, int32_t clientId,int32_t defaultCompressionThreshold=1024) {
+    return buildValueProto(value, std::chrono::milliseconds{0}, clientId,defaultCompressionThreshold);
 }
 
 
@@ -147,11 +147,11 @@ struct StreamCallData : public RpcCallDataBase {
 hurricache::CreateContainerRequest buildContainerRequest(
     const Key &key, const KeyHint *hint, int32_t clientId,
     hurricache::ContainerType type, std::chrono::milliseconds ttl,
-    const std::vector<ValuePtr> *values);
+    const std::vector<ValuePtr> *values,int32_t defaultCompressionThreshold=1024);
 
 hurricache::CreateContainerRequest buildContainerRequestOrdered(
     const Key &key, const KeyHint *hint, int32_t clientId,
     hurricache::ContainerType type, std::chrono::milliseconds ttl,
-    const std::vector<OrderedValuePtr> *values);
+    const std::vector<OrderedValuePtr> *values,int32_t defaultCompressionThreshold=1024);
 
 #endif //HURRICACHE_CPP_CLIENT_UTILS_HXX

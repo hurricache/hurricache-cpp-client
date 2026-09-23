@@ -8,11 +8,23 @@
 // Proto builders (used by standalone client)
 // =========================================================================
 
-::hurricache::Key buildKeyProto(const Key &key, const KeyHint *hint, int32_t clientId) {
+::hurricache::Key buildKeyProto(const Key &key, const KeyHint *hint, int32_t clientId,int32_t defaultCompressionThreshold) {
     ::hurricache::Key proto_key;
     auto *payload = proto_key.mutable_payload();
-    payload->set_size(key.size);
-    payload->mutable_payload()->assign(key.data, key.size);
+
+    if (key.size > defaultCompressionThreshold) {
+        proto_key.mutable_compressioninfo()->set_enabled(true);
+        uint32_t clen;
+        auto compressed = compress(key.data,key.size,&clen);
+        proto_key.mutable_compressioninfo()->set_rawsize(key.size);
+        payload->set_allocated_payload(new std::string(compressed,clen));
+        payload->set_size(clen);
+        delete []compressed;
+    } else {
+        payload->set_size(key.size);
+        payload->mutable_payload()->assign(key.data,key.size);
+    }
+
 
     if (hint != nullptr) {
         auto *key_hint = proto_key.mutable_keyhint();
@@ -23,17 +35,34 @@
     return proto_key;
 }
 
-::hurricache::GetRequest buildGetRequestProto(const Key &key, const KeyHint *hint, int32_t clientId) {
-    ::hurricache::GetRequest request;
-    *request.mutable_key() = buildKeyProto(key, hint, clientId);
-    return request;
-}
-
-::hurricache::Value buildValueProto(const Value &value, std::chrono::milliseconds ttl, int32_t clientId) {
+::hurricache::Value buildValueProto(const Value &value, std::chrono::milliseconds ttl, int32_t clientId,int32_t defaultCompressionThreshold) {
     ::hurricache::Value proto_value;
     auto *payload = proto_value.mutable_value();
-    payload->set_size(static_cast<uint32_t>(value.size));
-    payload->set_payload(absl::string_view(value.data, static_cast<size_t>(value.size)));
+
+    if (value.size > static_cast<uint64_t>(defaultCompressionThreshold)) {
+        proto_value.mutable_compressioninfo()->set_enabled(true);
+        uint32_t clen;
+        char* compressed = compress(value.data, static_cast<uint32_t>(value.size), &clen);
+        proto_value.mutable_compressioninfo()->set_rawsize(value.size);
+
+        payload->set_size(clen);
+        // Передаем сжатые данные через absl::Cord без лишнего копирования (делитер удаляет временный буфер compress через delete[])
+        payload->set_payload(absl::MakeCordFromExternal(
+            absl::string_view(compressed, static_cast<size_t>(clen)),
+            [compressed](absl::string_view) {
+                delete[] compressed;
+            }
+        ));
+    } else {
+        payload->set_size(static_cast<uint32_t>(value.size));
+        // Для несжатых данных используем внешний буфер value без копирования
+        payload->set_payload(absl::MakeCordFromExternal(
+            absl::string_view(value.data, static_cast<size_t>(value.size)),
+            [](absl::string_view) {
+                // value владеет памятью сам, освобождать здесь ничего не нужно
+            }
+        ));
+    }
 
     if (ttl.count() > 0) {
         auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -47,6 +76,13 @@
 
     return proto_value;
 }
+
+::hurricache::GetRequest buildGetRequestProto(const Key &key, const KeyHint *hint, int32_t clientId,int32_t defaultCompressionThreshold) {
+    ::hurricache::GetRequest request;
+    *request.mutable_key() = buildKeyProto(key, hint, clientId,defaultCompressionThreshold);
+    return request;
+}
+
 
 ::hurricache::AtomicCreate buildAtomicCreateProto(const Key &key, const KeyHint *hint, int32_t clientId,
                                                   int64_t value, std::chrono::milliseconds ttl) {
@@ -339,9 +375,13 @@ ValuePtr valueRequestToValue(const ::hurricache::Value &request) {
 hurricache::CreateContainerRequest buildContainerRequest(
     const Key &key, const KeyHint *hint, int32_t clientId,
     hurricache::ContainerType type, std::chrono::milliseconds ttl,
-    const std::vector<ValuePtr> *values) {
+    const std::vector<ValuePtr> *values,
+    int32_t defaultCompressionThreshold) {
     hurricache::CreateContainerRequest request;
-    *request.mutable_key() = buildKeyProto(key, hint, clientId);
+
+    // Вычисляем effective_hint по аналогии с упорядоченным контейнером
+    auto effective_hint = hint == nullptr ? calculateKeyHint(key) : hint;
+    *request.mutable_key() = buildKeyProto(key, effective_hint, clientId, defaultCompressionThreshold);
     request.set_type(type);
 
     if (ttl.count() > 0) {
@@ -349,22 +389,27 @@ hurricache::CreateContainerRequest buildContainerRequest(
             std::chrono::system_clock::now().time_since_epoch()).count();
         request.set_ttl(static_cast<uint64_t>(now_ms) + static_cast<uint64_t>(ttl.count()));
     }
+
     if (values != nullptr) {
         for (const auto &v: *values) {
-            *request.add_value_unordered() = buildValueProtoNoTtl(v, clientId);
+            if (v != nullptr) {
+                // Используем buildValueProto с поддержкой компрессии и порога
+                // (передаем нулевой ttl для элементов контейнера, если время жизни задается на уровне контейнера)
+                *request.add_value_unordered() = buildValueProto(*v, std::chrono::milliseconds(0), clientId,defaultCompressionThreshold);
+            }
         }
     }
     return request;
 }
 
-
 hurricache::CreateContainerRequest buildContainerRequestOrdered(
     const Key &key, const KeyHint *hint, int32_t clientId,
     hurricache::ContainerType type, std::chrono::milliseconds ttl,
-    const std::vector<OrderedValuePtr> *values) {
+    const std::vector<OrderedValuePtr> *values,
+    int32_t defaultCompressionThreshold) {
     hurricache::CreateContainerRequest request;
     auto effective_hint = hint == nullptr ? calculateKeyHint(key) : hint;
-    *request.mutable_key() = buildKeyProto(key, effective_hint, clientId);
+    *request.mutable_key() = buildKeyProto(key, effective_hint, clientId, defaultCompressionThreshold);
     request.set_type(type);
 
     if (ttl.count() > 0) {
@@ -373,12 +418,35 @@ hurricache::CreateContainerRequest buildContainerRequestOrdered(
         request.set_ttl(static_cast<uint64_t>(now_ms) + static_cast<uint64_t>(ttl.count()));
     }
 
-    for (const auto &val: *values) {
-        auto *ordered_val = request.add_value_ordered();
-        ordered_val->set_order(val->weight);
-        auto *ov_val = ordered_val->mutable_value();
-        ov_val->set_size(static_cast<uint32_t>(val->size));
-        ov_val->set_payload(absl::string_view(val->data, static_cast<size_t>(val->size)));
+    if (values != nullptr) {
+        for (const auto &val: *values) {
+            auto *ordered_val = request.add_value_ordered();
+            ordered_val->set_order(val->weight);
+            auto *ov_val = ordered_val->mutable_value();
+
+            if (val->size > static_cast<uint64_t>(defaultCompressionThreshold)) {
+                ordered_val->mutable_compressioninfo()->set_enabled(true);
+                uint32_t clen;
+                char* compressed = compress(val->data, static_cast<uint32_t>(val->size), &clen);
+                ordered_val->mutable_compressioninfo()->set_rawsize(val->size);
+
+                ov_val->set_size(clen);
+                ov_val->set_payload(absl::MakeCordFromExternal(
+                    absl::string_view(compressed, static_cast<size_t>(clen)),
+                    [compressed](absl::string_view) {
+                        delete[] compressed;
+                    }
+                ));
+            } else {
+                ov_val->set_size(static_cast<uint32_t>(val->size));
+                ov_val->set_payload(absl::MakeCordFromExternal(
+                    absl::string_view(val->data, static_cast<size_t>(val->size)),
+                    [](absl::string_view) {
+                        // val владеет памятью сам
+                    }
+                ));
+            }
+        }
     }
 
     return request;

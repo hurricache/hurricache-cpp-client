@@ -18,7 +18,7 @@ class FastCacheStandaloneClient {
 public:
     // Конструкторы
     FastCacheStandaloneClient(const std::string &host, int32_t port, int32_t defaultClientId,
-                              std::chrono::milliseconds timeout, int32_t defaultCompressionThreshold);
+                              std::chrono::milliseconds timeout, int32_t defaultCompressionThreshold = 1024);
 
     FastCacheStandaloneClient(const std::string &host, int32_t port, int32_t defaultClientId,
                               std::chrono::milliseconds timeout);
@@ -31,7 +31,7 @@ public:
 
 
     FastCacheStandaloneClient(std::shared_ptr<grpc::Channel> channel, std::string target, int32_t defaultClientId,
-                              std::chrono::milliseconds duration, int32_t defaultCompressionThreshold);
+                              std::chrono::milliseconds duration, int32_t defaultCompressionThreshold = 1024);
 
 
     // Геттеры и метаинформация
