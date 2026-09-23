@@ -5,7 +5,8 @@
 #include <iostream>
 #include <string>
 #include <chrono>
-#include <thread>
+#include <functional>
+#include <vector>
 #include "standalone_client.hxx"
 #include "test_base.hxx"
 
@@ -24,19 +25,21 @@ void testQueueOperations(FastCacheStandaloneClient &client);
 void testVectorOperations(FastCacheStandaloneClient &client);
 void testSetOperations(FastCacheStandaloneClient &client);
 
+
+
 struct TestResult {
     std::string name;
     bool passed;
     std::string message;
 };
 
-static TestResult runTestSuite(const std::string& name, std::function<void(FastCacheStandaloneClient&)> test_func) {
+static TestResult runTestSuite(const std::string& name, std::function<void(FastCacheStandaloneClient&)> test_func, FastCacheStandaloneClient& client) {
     std::cout << "\n" << std::string(60, '=') << "\n";
     std::cout << "Running: " << name << "\n";
     std::cout << std::string(60, '=') << "\n";
     
     try {
-        test_func();
+        test_func(client);
         return {name, true, "PASSED"};
     } catch (const std::exception& e) {
         return {name, false, "FAILED - " + std::string(e.what())};
@@ -54,7 +57,7 @@ static void printSummary(const std::vector<TestResult>& results) {
     int passed = 0;
     
     for (const auto& result : results) {
-        std::string status = result.passed ? "✓ PASSED" : "✗ FAILED";
+        std::string status = result.passed ? "[PASS]" : "[FAIL]";
         std::cout << status << " | " << result.name;
         if (!result.message.empty() && result.message != "PASSED") {
             std::cout << " - " << result.message;
@@ -85,7 +88,6 @@ int main(int argc, char* argv[]) {
     
     std::cout << "HurriCache C++ Client - Universal Test Runner\n";
     std::cout << "Target: " << host << ":" << port << "\n";
-    std::cout << "Started at: " << std::chrono::system_clock::now().time_since_epoch().count() << "\n";
     
     std::vector<TestResult> all_results;
     
@@ -108,28 +110,26 @@ int main(int argc, char* argv[]) {
         }
         
         // Define test suites
-        auto test_suites = std::vector<std::pair<std::string, std::function<void(FastCacheStandaloneClient&)>>>({
+        std::vector<std::pair<std::string, std::function<void(FastCacheStandaloneClient&)>>> test_suites = {
             // Basic tests module
-            {"TTL Management", [](FastCacheStandaloneClient& c) { testTtlManagement(c); }},
-            {"Key-Value Operations", [](FastCacheStandaloneClient& c) { testKeyValueOperations(c); }},
-            {"Container Creation", [](FastCacheStandaloneClient& c) { testContainerCreation(c); }},
-            {"Container Info & Boundary/Positional Pop", [](FastCacheStandaloneClient& c) { testContainerInfoBoundaryPositionalPop(c); }},
-            {"Streaming Operations", [](FastCacheStandaloneClient& c) { testStreamingOperations(c); }},
-            {"Insertion/Deletion", [](FastCacheStandaloneClient& c) { testInsertionDeletion(c); }},
-            {"Locking/Atomic Container Value", [](FastCacheStandaloneClient& c) { testLockingAtomicContainerValue(c); }},
+            {"TTL Management", testTtlManagement},
+            {"Key-Value Operations", testKeyValueOperations},
+            {"Container Creation", testContainerCreation},
+            {"Container Info & Boundary/Positional Pop", testContainerInfoBoundaryPositionalPop},
+            {"Streaming Operations", testStreamingOperations},
+            {"Insertion/Deletion", testInsertionDeletion},
+            {"Locking/Atomic Container Value", testLockingAtomicContainerValue},
             
             // List/Queue/Vector/Set tests
-            {"List Operations", [](FastCacheStandaloneClient& c) { testListOperations(c); }},
-            {"Queue Operations", [](FastCacheStandaloneClient& c) { testQueueOperations(c); }},
-            {"Vector Operations", [](FastCacheStandaloneClient& c) { testVectorOperations(c); }},
-            {"Set Operations", [](FastCacheStandaloneClient& c) { testSetOperations(c); }},
-        });
+            {"List Operations", testListOperations},
+            {"Queue Operations", testQueueOperations},
+            {"Vector Operations", testVectorOperations},
+            {"Set Operations", testSetOperations},
+        };
         
         // Run all test suites
         for (const auto& [suite_name, test_func] : test_suites) {
-            auto result = runTestSuite(suite_name, [test_func, &client]() {
-                test_func(client);
-            });
+            auto result = runTestSuite(suite_name, test_func, client);
             all_results.push_back(result);
         }
         
@@ -147,7 +147,6 @@ int main(int argc, char* argv[]) {
     printSummary(all_results);
     
     std::cout << "\nTotal execution time: " << duration.count() << " ms\n";
-    std::cout << "Finished at: " << std::chrono::system_clock::now().time_since_epoch().count() << "\n";
     
     // Return non-zero if any tests failed
     bool all_passed = std::all_of(all_results.begin(), all_results.end(), 

@@ -61,9 +61,9 @@ target_include_directories(vector_ops_test PUBLIC
 target_link_libraries(vector_ops_test PRIVATE hurricache_standalone_client hurricache_common gRPC::grpc++ protobuf::libprotobuf)
 
 # Universal test runner - all tests in one executable
+# Note: basic_tests.cxx has its own main(), so it's excluded
 add_executable(universal_test_runner
     src/universal_test_runner.cxx
-    src/basic_tests.cxx
     src/test_ttl.cxx
     src/test_kv_ops.cxx
     src/test_container_creation.cxx

@@ -4,6 +4,8 @@
 #pragma once
 
 #include <string>
+#include <cstring>
+#include <cstdlib>
 #include "standalone_client.hxx"
 
 namespace test_base {
@@ -29,5 +31,38 @@ namespace test_base {
 
     static std::shared_ptr<KeyHint> create_hint(uint32_t weak = 0, uint32_t strong = 0) {
         return std::make_shared<KeyHint>(weak, strong);
+    }
+
+    // Helper to create OrderedValue from string and weight
+    // Note: copies the string data to avoid dangling pointers
+    static OrderedValuePtr make_ordered_value(const char *str, uint64_t weight) {
+        uint64_t len = strlen(str);
+        char *data = static_cast<char *>(malloc(len));
+        memcpy(data, str, len);
+        auto ov = new OrderedValue();
+        ov->weight = weight;
+        ov->data = data;
+        ov->size = len;
+        return ov;
+    }
+
+    static OrderedValuePtr make_ordered_value(const std::string &str, uint64_t weight) {
+        uint64_t len = str.size();
+        char *data = static_cast<char *>(malloc(len));
+        memcpy(data, str.c_str(), len);
+        auto ov = new OrderedValue();
+        ov->weight = weight;
+        ov->data = data;
+        ov->size = len;
+        return ov;
+    }
+
+    // Helper to create KeyPtr
+    static KeyPtr make_key_ptr(const std::string &str) {
+        return new Key(str.size(), str.c_str());
+    }
+
+    static KeyPtr make_key_ptr(const char *str, uint32_t size) {
+        return new Key(size, str);
     }
 }

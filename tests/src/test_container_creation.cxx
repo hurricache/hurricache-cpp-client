@@ -1,5 +1,6 @@
 //
 // Tests for Container Creation
+// Based on Java tests for createQueue, createList, createVector, createSet, createOrderedSet, createMap, createOrderedMap
 //
 #include <iostream>
 #include <chrono>
@@ -15,16 +16,20 @@ static void testCreateQueue(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("queue1");
         
-        std::vector<ValuePtr> initial;
-        initial.push_back(test_base::make_value("item1"));
+        std::vector<ValuePtr> initial = {
+            test_base::make_value("item1"),
+            test_base::make_value("item2")
+        };
         
-        auto future = client.createQueue(key, nullptr, &initial, std::chrono::milliseconds(60000), 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
+        auto hint = client.createQueue(key, nullptr, &initial).get();
+        assert(hint.strong_hash != 0);
         
-        std::cout << "PASSED (createQueue returned hint: weak=" << result.weak_hash 
-                  << ", strong=" << result.strong_hash << ")\n";
+        // Verify by streaming
+        auto items = client.streamVector(key).get();
+        assert(items.size() == 2);
+        std::cout << "PASSED\n";
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
@@ -33,16 +38,19 @@ static void testCreateList(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("list1");
         
-        std::vector<ValuePtr> initial;
-        initial.push_back(test_base::make_value("item1"));
+        std::vector<ValuePtr> initial = {
+            test_base::make_value("item1"),
+            test_base::make_value("item2")
+        };
         
-        auto future = client.createList(key, nullptr, &initial, std::chrono::milliseconds(60000), 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
+        auto hint = client.createList(key, nullptr, &initial).get();
+        assert(hint.strong_hash != 0);
         
-        std::cout << "PASSED (createList returned hint: weak=" << result.weak_hash 
-                  << ", strong=" << result.strong_hash << ")\n";
+        auto items = client.streamList(key).get();
+        assert(items.size() == 2);
+        std::cout << "PASSED\n";
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
@@ -51,16 +59,19 @@ static void testCreateVector(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("vector1");
         
-        std::vector<ValuePtr> initial;
-        initial.push_back(test_base::make_value("item1"));
+        std::vector<ValuePtr> initial = {
+            test_base::make_value("item1"),
+            test_base::make_value("item2")
+        };
         
-        auto future = client.createVector(key, nullptr, &initial, std::chrono::milliseconds(60000), 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
+        auto hint = client.createVector(key, nullptr, &initial).get();
+        assert(hint.strong_hash != 0);
         
-        std::cout << "PASSED (createVector returned hint: weak=" << result.weak_hash 
-                  << ", strong=" << result.strong_hash << ")\n";
+        auto items = client.streamVector(key).get();
+        assert(items.size() == 2);
+        std::cout << "PASSED\n";
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
@@ -69,16 +80,19 @@ static void testCreateSet(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("set1");
         
-        std::vector<ValuePtr> initial;
-        initial.push_back(test_base::make_value("item1"));
+        std::vector<ValuePtr> initial = {
+            test_base::make_value("item1"),
+            test_base::make_value("item2")
+        };
         
-        auto future = client.createSet(key, nullptr, &initial, std::chrono::milliseconds(60000), 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
+        auto hint = client.createSet(key, nullptr, &initial).get();
+        assert(hint.strong_hash != 0);
         
-        std::cout << "PASSED (createSet returned hint: weak=" << result.weak_hash 
-                  << ", strong=" << result.strong_hash << ")\n";
+        auto items = client.streamSet(key).get();
+        assert(items.size() == 2);
+        std::cout << "PASSED\n";
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
@@ -87,17 +101,19 @@ static void testCreateOrderedSet(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("oset1");
         
-        std::vector<OrderedValuePtr> initial;
-        OrderedValuePtr ov = new OrderedValue{100, 5, const_cast<char*>("item1")};
-        initial.push_back(ov);
+        std::vector<OrderedValuePtr> initial = {
+            test_base::make_ordered_value("item1", 100),
+            test_base::make_ordered_value("item2", 200)
+        };
         
-        auto future = client.createOrderedSet(key, nullptr, &initial, std::chrono::milliseconds(60000), 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
+        auto hint = client.createOrderedSet(key, nullptr, &initial).get();
+        assert(hint.strong_hash != 0);
         
-        std::cout << "PASSED (createOrderedSet returned hint: weak=" << result.weak_hash 
-                  << ", strong=" << result.strong_hash << ")\n";
+        auto items = client.streamOrderedSet(key).get();
+        assert(items.size() == 2);
+        std::cout << "PASSED\n";
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
@@ -106,19 +122,20 @@ static void testCreateMap(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("map1");
         
-        std::map<Key, Value> initial;
-        Key mapKey = test_base::make_key("key1");
-        Value mapValue = Value{5, const_cast<char*>("val1")};
-        
-        initial[mapKey] = mapValue;
-        
-        auto future = client.createMap(key, nullptr, &initial, std::chrono::milliseconds(60000), 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (createMap returned hint: weak=" << result.weak_hash 
-                  << ", strong=" << result.strong_hash << ")\n";
+        std::map<KeyPtr, ValuePtr> initial;
+        auto k1 = test_base::make_key_ptr("key1");
+        auto k2 = test_base::make_key_ptr("key2");
+        initial[k1] = test_base::make_value("val1");
+        initial[k2] = test_base::make_value("val2");
+
+        auto hint = client.createMap(key, nullptr, &initial).get();
+        assert(hint.strong_hash != 0);
+
+        auto items = client.streamMap(key).get();
+        assert(items.size() == 2);
+        std::cout << "PASSED\n";
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
@@ -126,23 +143,17 @@ static void testCreateOrderedMap(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateOrderedMap... ";
     try {
         Key key = test_base::make_key("omap1");
-        
+
+        // Create empty ordered map first
         std::map<OrderedKey, OrderedValue> initial;
-        OrderedKey okey = OrderedValue{50, 4, const_cast<char*>("key1")};
-        // Need to set weight properly
-        okey.weight = 50;
-        
-        OrderedValue ovalue = OrderedValue{100, 5, const_cast<char*>("val1")};
-        
-        initial[okey] = ovalue;
-        
-        auto future = client.createOrderedMap(key, nullptr, &initial, std::chrono::milliseconds(60000), 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (createOrderedMap returned hint: weak=" << result.weak_hash 
-                  << ", strong=" << result.strong_hash << ")\n";
+        auto hint = client.createOrderedMap(key, nullptr, &initial).get();
+        assert(hint.strong_hash != 0);
+
+        auto items = client.streamOrderedMap(key).get();
+        assert(items.size() == 0);
+        std::cout << "PASSED\n";
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 

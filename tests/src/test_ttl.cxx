@@ -7,23 +7,17 @@
 #include <cassert>
 #include <stdexcept>
 #include "standalone_client.hxx"
+#include "test_base.hxx"
 
 static void testSetTtl(FastCacheStandaloneClient &client) {
     std::cout << "  testSetTtl... ";
     try {
-        Key key{};
-        key.size = 4;
-        key.data = const_cast<char*>("test");
+        Key key = test_base::make_key("ttl_test");
         
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
-        
-        auto future = client.setTtl(key, hint, 60000, 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
+        auto result = client.setTtl(key, nullptr, 60000).get();
         
         if (result) {
-            std::cout << "PASSED (setTtl returned true)\n";
+            std::cout << "PASSED\n";
         } else {
             std::cout << "FAILED (setTtl returned false)\n";
         }
@@ -35,16 +29,9 @@ static void testSetTtl(FastCacheStandaloneClient &client) {
 static void testGetTtl(FastCacheStandaloneClient &client) {
     std::cout << "  testGetTtl... ";
     try {
-        Key key{};
-        key.size = 4;
-        key.data = const_cast<char*>("test");
+        Key key = test_base::make_key("ttl_test");
         
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
-        
-        auto future = client.getTtl(key, hint, 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
+        auto result = client.getTtl(key).get();
         
         std::cout << "PASSED (getTtl returned " << result << ")\n";
     } catch (const std::exception &e) {

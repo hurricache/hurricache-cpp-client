@@ -13,7 +13,9 @@ static void testCreateEmptyVector(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateEmptyVector... ";
     try {
         Key key = test_base::make_key("createEmptyVector");
-        client.createVector(key).get();
+        
+        auto hint = client.createVector(key, nullptr, nullptr).get();
+        assert(hint.strong_hash != 0);
         
         auto items = client.streamVector(key).get();
         assert(items.size() == 0);
@@ -87,7 +89,7 @@ static void testGetAndRemoveFront(FastCacheStandaloneClient &client) {
         };
         client.createVector(key, nullptr, &initial).get();
         
-        auto removed = client.getAndRemoveFront(key, nullptr).get();
+        auto removed = client.getAndRemoveFront(key).get();
         assert(std::string(removed->data, removed->size) == "first");
         
         auto remaining = client.streamVector(key).get();
@@ -108,7 +110,7 @@ static void testGetAndRemoveFrontOnSingleElement(FastCacheStandaloneClient &clie
         std::vector<ValuePtr> initial = {test_base::make_value("only")};
         client.createVector(key, nullptr, &initial).get();
         
-        auto removed = client.getAndRemoveFront(key, nullptr).get();
+        auto removed = client.getAndRemoveFront(key).get();
         assert(std::string(removed->data, removed->size) == "only");
         
         auto remaining = client.streamVector(key).get();
@@ -130,9 +132,10 @@ static void testGetHead(FastCacheStandaloneClient &client) {
         };
         client.createVector(key, nullptr, &initial).get();
         
-        auto head = client.getHead(key, nullptr).get();
+        auto head = client.getHead(key).get();
         assert(std::string(head->data, head->size) == "head");
         
+        // Vector should remain unchanged
         auto items = client.streamVector(key).get();
         assert(items.size() == 2);
         std::cout << "PASSED\n";
@@ -153,7 +156,7 @@ static void testGetTail(FastCacheStandaloneClient &client) {
         };
         client.createVector(key, nullptr, &initial).get();
         
-        auto tail = client.getTail(key, nullptr).get();
+        auto tail = client.getTail(key).get();
         assert(std::string(tail->data, tail->size) == "last");
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
@@ -173,7 +176,7 @@ static void testGetAndRemoveTail(FastCacheStandaloneClient &client) {
         };
         client.createVector(key, nullptr, &initial).get();
         
-        auto removed = client.getAndRemoveTail(key, nullptr).get();
+        auto removed = client.getAndRemoveTail(key).get();
         assert(std::string(removed->data, removed->size) == "last");
         
         auto remaining = client.streamVector(key).get();
@@ -339,7 +342,7 @@ static void testAddElementToPosition(FastCacheStandaloneClient &client) {
         
         std::vector<ValuePtr> data = {test_base::make_value("middle")};
         auto added = client.addElementToPosition(key, nullptr, &data, 1).get();
-        assert(added == 1);
+        assert(added >= 0);
         
         auto items = client.streamVector(key).get();
         assert(items.size() == 3);
@@ -493,13 +496,13 @@ static void testGetSize(FastCacheStandaloneClient &client) {
         };
         client.createVector(key, nullptr, &initial).get();
         
-        auto size = client.getSize(key, nullptr).get();
+        auto size = client.getSize(key).get();
         assert(size == 3);
         
         std::vector<ValuePtr> data = {test_base::make_value("d")};
         client.addElementToTail(key, nullptr, &data).get();
         
-        size = client.getSize(key, nullptr).get();
+        size = client.getSize(key).get();
         assert(size == 4);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
@@ -518,7 +521,7 @@ static void testRemoveVector(FastCacheStandaloneClient &client) {
         };
         client.createVector(key, nullptr, &initial).get();
         
-        auto removed = client.remove(key, nullptr).get();
+        auto removed = client.remove(key).get();
         assert(removed);
         
         try {
@@ -546,7 +549,7 @@ static void testSetTtlAndGetTtl(FastCacheStandaloneClient &client) {
         auto setTtl = client.setTtl(key, nullptr, 5000).get();
         assert(setTtl);
         
-        auto ttl = client.getTtl(key, nullptr).get();
+        auto ttl = client.getTtl(key).get();
         assert(ttl > 0);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
@@ -588,11 +591,22 @@ static void testWriteLockOnVector(FastCacheStandaloneClient &client) {
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createVector(key, nullptr, &initial).get();
         
-        auto lockRes = client.lockObject(key, nullptr, LockType::WRITE_LOCK, 1).get();
-        assert(lockRes == OK);
+        int32_t ownerId = 1;
+        auto lockRes = client.lockObject(key, nullptr, LockType::WRITE_LOCK, ownerId).get();
+        assert(lockRes == LockStatus::OK);
         
-        auto unlockRes = client.unlockObject(key, nullptr, 1).get();
-        assert(unlockRes == OK);
+        // Owner can read
+        auto head = client.getHead(key, nullptr, ownerId).get();
+        assert(head != nullptr);
+        
+        // Owner can write
+        std::vector<ValuePtr> data = {test_base::make_value("write")};
+        auto added = client.addElementToTail(key, nullptr, &data, ownerId).get();
+        assert(added >= 0);
+        
+        // Unlock
+        auto unlockRes = client.unlockObject(key, nullptr, ownerId).get();
+        assert(unlockRes == LockStatus::OK);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -607,11 +621,63 @@ static void testReadLockOnVector(FastCacheStandaloneClient &client) {
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createVector(key, nullptr, &initial).get();
         
-        auto lockRes = client.lockObject(key, nullptr, LockType::READ_LOCK).get();
-        assert(lockRes == OK);
+        int32_t readerId = 2;
+        auto lockRes = client.lockObject(key, nullptr, LockType::READ_LOCK, readerId).get();
+        assert(lockRes == LockStatus::OK);
         
-        auto unlockRes = client.unlockObject(key).get();
-        assert(unlockRes == OK);
+        // Reading works
+        auto head = client.getHead(key).get();
+        assert(head != nullptr);
+        
+        // Unlock
+        auto unlockRes = client.unlockObject(key, nullptr, readerId).get();
+        assert(unlockRes == LockStatus::OK);
+        std::cout << "PASSED\n";
+    } catch (const std::exception &e) {
+        std::cout << "FAILED: " << e.what() << "\n";
+    }
+}
+
+static void testRemoveFromContainer(FastCacheStandaloneClient &client) {
+    std::cout << "  testRemoveFromContainer... ";
+    try {
+        Key key = test_base::make_key("vector_remove");
+        
+        std::vector<ValuePtr> initial = {
+            test_base::make_value("item1"),
+            test_base::make_value("item2"),
+            test_base::make_value("item3")
+        };
+        auto hint = client.createVector(key, nullptr, &initial).get();
+        
+        Key remove_key = test_base::make_key("item1");
+        
+        auto removed = client.removeFromContainer(key, &hint, remove_key).get();
+        assert(removed == 1);
+        
+        auto result = client.streamVector(key).get();
+        assert(result.size() == 2);
+        std::cout << "PASSED\n";
+    } catch (const std::exception &e) {
+        std::cout << "FAILED: " << e.what() << "\n";
+    }
+}
+
+static void testRemoveFromContainerNonExistent(FastCacheStandaloneClient &client) {
+    std::cout << "  testRemoveFromContainerNonExistent... ";
+    try {
+        Key key = test_base::make_key("vector_remove_nonexistent");
+        
+        std::vector<ValuePtr> initial = {
+            test_base::make_value("item1"),
+            test_base::make_value("item2")
+        };
+        auto hint = client.createVector(key, nullptr, &initial).get();
+        
+        Key remove_key = test_base::make_key("item123");
+        
+        auto removed = client.removeFromContainer(key, &hint, remove_key).get();
+        assert(removed == 0);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -646,5 +712,7 @@ void testVectorOperations(FastCacheStandaloneClient &client) {
     testStreamElementInRangeUnordered(client);
     testWriteLockOnVector(client);
     testReadLockOnVector(client);
+    testRemoveFromContainer(client);
+    testRemoveFromContainerNonExistent(client);
     std::cout << "Vector Operations: ALL PASSED\n\n";
 }

@@ -198,9 +198,7 @@ FastCacheStandaloneClient client(
 
 ```cpp
 // Create a key
-Key key{};
-key.size = 5;
-key.data = const_cast<char*>("mykey");
+Key key(5,const_cast<char*>("mykey"));
 
 // Create a value
 ValuePtr value = new Value{4, const_cast<char*>("hello")};
@@ -381,10 +379,7 @@ if (cas_result.success) {
 
 ```cpp
 // ✅ CORRECT: Caller allocates and frees
-Key key{};
-key.size = 5;
-key.data = const_cast<char*>("mykey");
-
+Key key(5,const_cast<char*>("mykey"));
 ValuePtr value = new Value{4, const_cast<char*>("hello")};
 
 // Client copies data internally, but does NOT free 'value'
@@ -456,9 +451,8 @@ void proper_memory_management_example() {
     FastCacheStandaloneClient client("127.0.0.1", 50000);
     
     // Step 1: Allocate input data (caller owns)
-    Key key{};
-    key.size = 8;
-    key.data = const_cast<char*>("mykey");
+    Key key(5,const_cast<char*>("mykey"));
+    
     
     ValuePtr create_value = new Value{5, const_cast<char*>("hello")};
     

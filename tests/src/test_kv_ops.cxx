@@ -1,153 +1,172 @@
 //
 // Tests for Key-Value Operations
+// Based on Java RawValuesTest
 //
 #include <iostream>
 #include <chrono>
 #include <future>
 #include <vector>
 #include <cassert>
-#include <stdexcept>
+#include <string>
 #include "standalone_client.hxx"
+#include "test_base.hxx"
 
 static void testCreateKeyValue(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateKeyValue... ";
     try {
-        Key key{};
-        key.size = 8;
-        key.data = const_cast<char*>("kv_test1");
+        Key key = test_base::make_key("kv_test1");
+        Value value("hello", 5);
         
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
+        auto hint = client.createKeyValue(key, nullptr, value).get();
+        assert(hint.strong_hash != 0);
         
-        Value value{};
-        value.size = 5;
-        value.data = const_cast<char*>("hello");
-        
-        auto future = client.createKeyValue(key, hint, value, std::chrono::milliseconds(60000), 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (createKeyValue returned hint: weak=" << result.weak_hash 
-                  << ", strong=" << result.strong_hash << ")\n";
+        auto result = client.getValue(key, nullptr).get();
+        assert(std::string(result->data, result->size) == "hello");
+        std::cout << "PASSED\n";
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
 static void testGetValue(FastCacheStandaloneClient &client) {
     std::cout << "  testGetValue... ";
     try {
-        Key key{};
-        key.size = 8;
-        key.data = const_cast<char*>("kv_test1");
+        Key key = test_base::make_key("kv_test_get");
         
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
+        Value value("world", 5);
+        client.createKeyValue(key, nullptr, value).get();
         
-        auto future = client.getValue(key, hint, 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (getValue returned value size=" << result.size << ")\n";
+        auto result = client.getValue(key, nullptr).get();
+        assert(std::string(result->data, result->size) == "world");
+        std::cout << "PASSED\n";
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
 static void testUpdateKeyValue(FastCacheStandaloneClient &client) {
     std::cout << "  testUpdateKeyValue... ";
     try {
-        Key key{};
-        key.size = 8;
-        key.data = const_cast<char*>("kv_test1");
+        Key key = test_base::make_key("kv_test_update");
         
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
+        Value value("old", 3);
+        client.createKeyValue(key, nullptr, value).get();
         
-        Value value{};
-        value.size = 6;
-        value.data = const_cast<char*>("world!");
+        Value newValue("new_value", 7);
+        auto updated = client.updateKeyValue(key, nullptr, newValue).get();
+        assert(std::string(updated->data, updated->size) == "new_value");
         
-        auto future = client.updateKeyValue(key, hint, value, std::chrono::milliseconds(60000), 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (updateKeyValue returned value size=" << result.size << ")\n";
+        auto result = client.getValue(key, nullptr).get();
+        assert(std::string(result->data, result->size) == "new_value");
+        std::cout << "PASSED\n";
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
-static void testExistKey(FastCacheStandaloneClient &client) {
-    std::cout << "  testExistKey... ";
+static void testExistKeyExisting(FastCacheStandaloneClient &client) {
+    std::cout << "  testExistKeyExisting... ";
     try {
-        Key key{};
-        key.size = 8;
-        key.data = const_cast<char*>("kv_test1");
+        Key key = test_base::make_key("kv_test_exist");
         
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
+        Value value("data", 4);
+        client.createKeyValue(key, nullptr, value).get();
         
-        auto future = client.existKey(key, hint, 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (existKey returned " << (result ? "true" : "false") << ")\n";
+        auto exists = client.existKey(key).get();
+        assert(exists);
+        std::cout << "PASSED\n";
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
-static void testRemove(FastCacheStandaloneClient &client) {
-    std::cout << "  testRemove... ";
+static void testExistKeyNonExistent(FastCacheStandaloneClient &client) {
+    std::cout << "  testExistKeyNonExistent... ";
     try {
-        Key key{};
-        key.size = 8;
-        key.data = const_cast<char*>("kv_test1");
+        Key key = test_base::make_key("kv_test_nonexist");
         
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
-        
-        auto future = client.remove(key, hint, 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (remove returned " << (result ? "true" : "false") << ")\n";
+        auto exists = client.existKey(key).get();
+        assert(!exists);
+        std::cout << "PASSED\n";
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
+    }
+}
+
+static void testRemoveKeyValue(FastCacheStandaloneClient &client) {
+    std::cout << "  testRemoveKeyValue... ";
+    try {
+        Key key = test_base::make_key("kv_test_remove");
+        
+        Value value("data", 4);
+        client.createKeyValue(key, nullptr, value).get();
+        
+        auto removed = client.remove(key).get();
+        assert(removed);
+        
+        auto exists = client.existKey(key).get();
+        assert(!exists);
+        std::cout << "PASSED\n";
+    } catch (const std::exception &e) {
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
 static void testGetAndDeleteValue(FastCacheStandaloneClient &client) {
     std::cout << "  testGetAndDeleteValue... ";
     try {
-        Key key{};
-        key.size = 8;
-        key.data = const_cast<char*>("kv_test_del");
+        Key key = test_base::make_key("kv_test_del");
         
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
+        Value value("delete_me", 9);
+        client.createKeyValue(key, nullptr, value).get();
         
-        // First create the key
-        Value value{};
-        value.size = 5;
-        value.data = const_cast<char*>("delete");
+        auto deleted = client.getAndDeleteValue(key).get();
+        assert(std::string(deleted->data, deleted->size) == "delete_me");
         
-        try {
-            auto createFuture = client.createKeyValue(key, hint, value, std::chrono::milliseconds(60000), 0, std::chrono::milliseconds(5000));
-            createFuture.get();
-        } catch (...) {
-            // Ignore if already exists
-        }
-        
-        // Now get and delete
-        auto future = client.getAndDeleteValue(key, hint, 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (getAndDeleteValue returned value size=" << result.size << ")\n";
+        auto exists = client.existKey(key).get();
+        assert(!exists);
+        std::cout << "PASSED\n";
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
+    }
+}
+
+static void testLockKeyValue(FastCacheStandaloneClient &client) {
+    std::cout << "  testLockKeyValue... ";
+    try {
+        Key key = test_base::make_key("kv_test_lock");
+        
+        Value value("locked", 6);
+        client.createKeyValue(key, nullptr, value).get();
+        
+        int32_t ownerId = 1;
+        auto lockRes = client.lockObject(key, nullptr, LockType::WRITE_LOCK, ownerId).get();
+        assert(lockRes == LockStatus::OK);
+        
+        auto unlockRes = client.unlockObject(key, nullptr, ownerId).get();
+        assert(unlockRes == LockStatus::OK);
+        std::cout << "PASSED\n";
+    } catch (const std::exception &e) {
+        std::cout << "FAILED: " << e.what() << "\n";
+    }
+}
+
+static void testSetTtlKeyValue(FastCacheStandaloneClient &client) {
+    std::cout << "  testSetTtlKeyValue... ";
+    try {
+        Key key = test_base::make_key("kv_test_ttl");
+        
+        Value value("ttl_test", 8);
+        client.createKeyValue(key, nullptr, value).get();
+        
+        auto setTtl = client.setTtl(key, nullptr, 5000).get();
+        assert(setTtl);
+        
+        auto ttl = client.getTtl(key).get();
+        assert(ttl > 0);
+        std::cout << "PASSED\n";
+    } catch (const std::exception &e) {
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
@@ -156,8 +175,11 @@ void testKeyValueOperations(FastCacheStandaloneClient &client) {
     testCreateKeyValue(client);
     testGetValue(client);
     testUpdateKeyValue(client);
-    testExistKey(client);
-    testRemove(client);
+    testExistKeyExisting(client);
+    testExistKeyNonExistent(client);
+    testRemoveKeyValue(client);
     testGetAndDeleteValue(client);
+    testLockKeyValue(client);
+    testSetTtlKeyValue(client);
     std::cout << "Key-Value Operations: PASSED\n\n";
 }

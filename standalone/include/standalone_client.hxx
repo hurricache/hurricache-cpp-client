@@ -70,7 +70,7 @@ public:
                                                       int32_t clientId = 0,
                                                       std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<ValuePtr> getValue(const Key &key, const KeyHint *hint,
+    [[nodiscard]] std::future<ValuePtr> getValue(const Key &key, const KeyHint *hint = nullptr,
                                                  int32_t clientId = 0,
                                                  std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 

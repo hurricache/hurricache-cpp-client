@@ -216,10 +216,10 @@ static void testGetContainerValue(FastCacheStandaloneClient &client) {
         Key key = test_base::make_key("containerGet1");
         
         // Create map with initial data
-        Key k1 = test_base::make_key("key1");
-        Value v1 = Value{"val1", 6};
-        std::map<Key, Value> initial;
-        initial.emplace(k1, std::move(v1));
+        KeyPtr k1 = test_base::make_key_ptr("key1");
+        ValuePtr v1 = test_base::make_value("val1");
+        std::map<KeyPtr, ValuePtr> initial;
+        initial[k1] = v1;
         
         client.createMap(key, nullptr, &initial).get();
         
@@ -242,10 +242,10 @@ static void testGetAndRemoveContainerValue(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("containerGetRem1");
         
-        Key k1 = test_base::make_key("key1");
-        Value v1 = Value{"val1", 6};
-        std::map<Key, Value> initial;
-        initial.emplace(k1, std::move(v1));
+        KeyPtr k1 = test_base::make_key_ptr("key1");
+        ValuePtr v1 = test_base::make_value("val1");
+        std::map<KeyPtr, ValuePtr> initial;
+        initial[k1] = v1;
         
         client.createMap(key, nullptr, &initial).get();
         
@@ -268,10 +268,10 @@ static void testContainsContainerKey(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("containerContains1");
         
-        Key k1 = test_base::make_key("key1");
-        Value v1 = Value{"val1", 6};
-        std::map<Key, Value> initial;
-        initial.emplace(k1, std::move(v1));
+        KeyPtr k1 = test_base::make_key_ptr("key1");
+        ValuePtr v1 = test_base::make_value("val1");
+        std::map<KeyPtr, ValuePtr> initial;
+        initial[k1] = v1;
         
         client.createMap(key, nullptr, &initial).get();
         
@@ -289,15 +289,15 @@ static void testUpdateContainerValue(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("containerUpdate1");
         
-        Key k1 = test_base::make_key("key1");
-        Value v1 = Value{"val1", 6};
-        std::map<Key, Value> initial;
-        initial.emplace(k1, std::move(v1));
+        KeyPtr k1 = test_base::make_key_ptr("key1");
+        ValuePtr v1 = test_base::make_value("val1");
+        std::map<KeyPtr, ValuePtr> initial;
+        initial[k1] = v1;
         
         client.createMap(key, nullptr, &initial).get();
         
         Key elementKey = test_base::make_key("key1");
-        Value newValue = Value{"update", 6};
+        Value newValue("update", 6);
         auto future = client.updateContainerValue(key, nullptr, elementKey, newValue).get();
         
         if (future && future->size > 0) {
@@ -316,10 +316,10 @@ static void testRemoveFromContainerByKey(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("containerRemove1");
         
-        Key k1 = test_base::make_key("key1");
-        Value v1 = Value{"val1", 6};
-        std::map<Key, Value> initial;
-        initial.emplace(k1, std::move(v1));
+        KeyPtr k1 = test_base::make_key_ptr("key1");
+        ValuePtr v1 = test_base::make_value("val1");
+        std::map<KeyPtr, ValuePtr> initial;
+        initial[k1] = v1;
         
         client.createMap(key, nullptr, &initial).get();
         
@@ -337,11 +337,11 @@ static void testAddElementHashMap(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("hashMapAdd1");
         
-        std::map<Key, Value> initial;
+        std::map<KeyPtr, ValuePtr> initial;
         client.createMap(key, nullptr, &initial).get();
         
         std::vector<KeyPtr> containerKeys;
-        containerKeys.push_back(test_base::make_key("nk1"));
+        containerKeys.push_back(test_base::make_key_ptr("nk1"));
         
         std::vector<ValuePtr> containerValues;
         containerValues.push_back(test_base::make_value("nv1"));
@@ -363,15 +363,13 @@ static void testAddElementOrderedMap(FastCacheStandaloneClient &client) {
         client.createOrderedMap(key, nullptr, &initial).get();
         
         std::vector<OrderedValuePtr> containerKeys;
-        OrderedValuePtr ov = new OrderedValue{100, 4, const_cast<char*>("nk1")};
+        auto ov = test_base::make_ordered_value("nk1", 100);
         containerKeys.push_back(ov);
         
         std::vector<ValuePtr> containerValues;
         containerValues.push_back(test_base::make_value("nv1"));
         
         auto future = client.addElementOrderedMap(key, nullptr, &containerKeys, &containerValues).get();
-        
-        delete ov;
         
         std::cout << "PASSED (addElementOrderedMap returned " << future << ")\n";
     } catch (const std::exception &e) {

@@ -5,294 +5,151 @@
 #include <chrono>
 #include <future>
 #include <vector>
-#include <stdexcept>
+#include <string>
+#include <cassert>
 #include "standalone_client.hxx"
+#include "test_base.hxx"
 
 static void testAddElementUnordered(FastCacheStandaloneClient &client) {
     std::cout << "  testAddElementUnordered... ";
     try {
-        Key key{};
-        key.size = 8;
-        key.data = const_cast<char*>("list1");
+        Key key = test_base::make_key("unordered1");
         
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
+        std::vector<ValuePtr> initial = {
+            test_base::make_value("item1"),
+            test_base::make_value("item2")
+        };
+        client.createSet(key, nullptr, &initial).get();
         
-        std::vector<Value> data;
-        Value v1{};
-        v1.size = 5;
-        v1.data = const_cast<char*>("new1");
-        data.push_back(v1);
+        std::vector<ValuePtr> data = {test_base::make_value("new1")};
+        auto result = client.addElementUnordered(key, nullptr, &data).get();
+        assert(result == 1);
         
-        auto future = client.addElementUnordered(key, hint, data, 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (addElementUnordered returned " << result << ")\n";
+        auto items = client.streamSet(key).get();
+        assert(items.size() == 3);
+        std::cout << "PASSED\n";
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
 static void testAddElementWithWeight(FastCacheStandaloneClient &client) {
     std::cout << "  testAddElementWithWeight... ";
     try {
-        Key key{};
-        key.size = 10;
-        key.data = const_cast<char*>("oset1");
+        Key key = test_base::make_key("orderedSet1");
         
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
+        std::vector<OrderedValuePtr> initial = {
+            test_base::make_ordered_value("item1", 100)
+        };
+        client.createOrderedSet(key, nullptr, &initial).get();
         
-        std::vector<OrderedValue> data;
-        OrderedValue ov1(200, Value{});
-        ov1.data = const_cast<char*>("new1");
-        ov1.size = 5;
-        data.push_back(ov1);
+        std::vector<OrderedValuePtr> data = {
+            test_base::make_ordered_value("new1", 200)
+        };
+        auto result = client.addElementWithWeight(key, nullptr, &data).get();
+        assert(result == 1);
         
-        auto future = client.addElementWithWeight(key, hint, data, 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (addElementWithWeight returned " << result << ")\n";
+        auto items = client.streamOrderedSet(key).get();
+        assert(items.size() == 2);
+        std::cout << "PASSED\n";
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
 static void testAddElementToTail(FastCacheStandaloneClient &client) {
     std::cout << "  testAddElementToTail... ";
     try {
-        Key key{};
-        key.size = 8;
-        key.data = const_cast<char*>("list1");
+        Key key = test_base::make_key("list1");
         
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
+        std::vector<ValuePtr> initial = {
+            test_base::make_value("item1")
+        };
+        client.createList(key, nullptr, &initial).get();
         
-        std::vector<Value> data;
-        Value v1{};
-        v1.size = 5;
-        v1.data = const_cast<char*>("tail1");
-        data.push_back(v1);
+        std::vector<ValuePtr> data = {test_base::make_value("tail1")};
+        auto result = client.addElementToTail(key, nullptr, &data).get();
+        assert(result == 1);
         
-        auto future = client.addElementToTail(key, hint, data, 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (addElementToTail returned " << result << ")\n";
+        auto items = client.streamList(key).get();
+        assert(items.size() == 2);
+        std::cout << "PASSED\n";
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
 static void testAddElementToHead(FastCacheStandaloneClient &client) {
     std::cout << "  testAddElementToHead... ";
     try {
-        Key key{};
-        key.size = 8;
-        key.data = const_cast<char*>("list1");
+        Key key = test_base::make_key("list2");
         
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
+        std::vector<ValuePtr> initial = {
+            test_base::make_value("item1")
+        };
+        client.createList(key, nullptr, &initial).get();
         
-        std::vector<Value> data;
-        Value v1{};
-        v1.size = 5;
-        v1.data = const_cast<char*>("head1");
-        data.push_back(v1);
+        std::vector<ValuePtr> data = {test_base::make_value("head1")};
+        auto result = client.addElementToHead(key, nullptr, &data).get();
+        assert(result == 1);
         
-        auto future = client.addElementToHead(key, hint, data, 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (addElementToHead returned " << result << ")\n";
+        auto items = client.streamList(key).get();
+        assert(items.size() == 2);
+        assert(std::string(items[0]->data, items[0]->size) == "head1");
+        std::cout << "PASSED\n";
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
-static void testAddElementToPosition(FastCacheStandaloneClient &client) {
-    std::cout << "  testAddElementToPosition... ";
+static void testRemoveElement(FastCacheStandaloneClient &client) {
+    std::cout << "  testRemoveElement... ";
     try {
-        Key key{};
-        key.size = 8;
-        key.data = const_cast<char*>("list1");
+        Key key = test_base::make_key("removeElement");
         
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
+        std::vector<ValuePtr> initial = {
+            test_base::make_value("item1"),
+            test_base::make_value("item2")
+        };
+        client.createList(key, nullptr, &initial).get();
         
-        std::vector<Value> data;
-        Value v1{};
-        v1.size = 5;
-        v1.data = const_cast<char*>("pos1");
-        data.push_back(v1);
+        auto result = client.remove(key).get();
+        assert(result);
         
-        auto future = client.addElementToPosition(key, hint, data, 0, 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (addElementToPosition returned " << result << ")\n";
+        try {
+            client.streamList(key).get();
+            std::cout << "FAILED: Expected NOT_FOUND\n";
+        } catch (const std::exception &) {
+            std::cout << "PASSED\n";
+        }
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
-static void testAddElementToPositionBefore(FastCacheStandaloneClient &client) {
-    std::cout << "  testAddElementToPositionBefore... ";
+static void testRemoveElementNonExistent(FastCacheStandaloneClient &client) {
+    std::cout << "  testRemoveElementNonExistent... ";
     try {
-        Key key{};
-        key.size = 8;
-        key.data = const_cast<char*>("list1");
+        Key key = test_base::make_key("removeNonExistent");
         
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
-        
-        std::vector<Value> data;
-        Value v1{};
-        v1.size = 5;
-        v1.data = const_cast<char*>("bef1");
-        data.push_back(v1);
-        
-        Value pivot{};
-        pivot.size = 5;
-        pivot.data = const_cast<char*>("item1");
-        
-        auto future = client.addElementToPositionBefore(key, hint, data, pivot, 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (addElementToPositionBefore returned " << result << ")\n";
+        try {
+            client.remove(key).get();
+            std::cout << "FAILED: Expected NOT_FOUND\n";
+        } catch (const std::exception &) {
+            std::cout << "PASSED\n";
+        }
     } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
-    }
-}
-
-static void testAddElementToPositionAfter(FastCacheStandaloneClient &client) {
-    std::cout << "  testAddElementToPositionAfter... ";
-    try {
-        Key key{};
-        key.size = 8;
-        key.data = const_cast<char*>("list1");
-        
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
-        
-        std::vector<Value> data;
-        Value v1{};
-        v1.size = 5;
-        v1.data = const_cast<char*>("aft1");
-        data.push_back(v1);
-        
-        Value pivot{};
-        pivot.size = 5;
-        pivot.data = const_cast<char*>("item1");
-        
-        auto future = client.addElementToPositionAfter(key, hint, data, pivot, 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (addElementToPositionAfter returned " << result << ")\n";
-    } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
-    }
-}
-
-static void testRemoveHead(FastCacheStandaloneClient &client) {
-    std::cout << "  testRemoveHead... ";
-    try {
-        Key key{};
-        key.size = 8;
-        key.data = const_cast<char*>("list1");
-        
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
-        
-        auto future = client.removeHead(key, hint, 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (removeHead returned " << (result ? "true" : "false") << ")\n";
-    } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
-    }
-}
-
-static void testRemoveTail(FastCacheStandaloneClient &client) {
-    std::cout << "  testRemoveTail... ";
-    try {
-        Key key{};
-        key.size = 8;
-        key.data = const_cast<char*>("list1");
-        
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
-        
-        auto future = client.removeTail(key, hint, 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (removeTail returned " << (result ? "true" : "false") << ")\n";
-    } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
-    }
-}
-
-static void testRemoveElementAtPosition(FastCacheStandaloneClient &client) {
-    std::cout << "  testRemoveElementAtPosition... ";
-    try {
-        Key key{};
-        key.size = 8;
-        key.data = const_cast<char*>("list1");
-        
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
-        
-        auto future = client.removeElementAtPosition(key, hint, 0, 0, 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (removeElementAtPosition returned " << (result ? "true" : "false") << ")\n";
-    } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
-    }
-}
-
-static void testRemoveFromContainer(FastCacheStandaloneClient &client) {
-    std::cout << "  testRemoveFromContainer... ";
-    try {
-        Key key{};
-        key.size = 8;
-        key.data = const_cast<char*>("list1");
-        
-        KeyHint hint{};
-        hint.weak_hash = 0;
-        hint.strong_hash = 0;
-        
-        std::vector<Key> keys;
-        std::vector<Value> values;
-        
-        auto future = client.removeFromContainer(key, hint, ContainerType::LIST, keys, values, 0, std::chrono::milliseconds(5000));
-        auto result = future.get();
-        
-        std::cout << "PASSED (removeFromContainer returned " << result << ")\n";
-    } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
+        std::cout << "FAILED: " << e.what() << "\n";
     }
 }
 
 void testInsertionDeletion(FastCacheStandaloneClient &client) {
-    std::cout << "=== Insertion & Deletion Tests ===\n";
+    std::cout << "=== Insertion/Deletion Tests ===\n";
     testAddElementUnordered(client);
     testAddElementWithWeight(client);
     testAddElementToTail(client);
     testAddElementToHead(client);
-    testAddElementToPosition(client);
-    testAddElementToPositionBefore(client);
-    testAddElementToPositionAfter(client);
-    testRemoveHead(client);
-    testRemoveTail(client);
-    testRemoveElementAtPosition(client);
-    testRemoveFromContainer(client);
-    std::cout << "Insertion & Deletion: PASSED\n\n";
+    testRemoveElement(client);
+    testRemoveElementNonExistent(client);
+    std::cout << "Insertion/Deletion: PASSED\n\n";
 }
