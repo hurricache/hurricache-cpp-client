@@ -218,9 +218,9 @@ ValuePtr result = get_future.get();
 if (result && result->size > 0) {
     std::string data(result->data, result->size);
     std::cout << "Value: " << data << "\n";
-    delete[] result->data;  // Free data
-    delete result;          // Free value
 }
+
+delete result;  // Value destructor automatically frees result->data
 
 // Update value
 auto update_future = client.updateKeyValue(key, nullptr, *value, std::chrono::milliseconds(60000));
@@ -428,17 +428,15 @@ ValuePtr leaked = client.getValue(key, nullptr).get();
 **Streaming operations return vectors of pointers — caller owns all memory.**
 
 ```cpp
-// ✅ CORRECT: Free all streamed elements
+// ✅ CORRECT: Use free_content for containers
 auto items = client.streamList(key, nullptr).get();
 
 for (const auto& item : items) {
     if (item) {
         std::cout << "Item: " << std::string(item->data, item->size) << "\n";
-        delete item;  // Value destructor automatically frees item->data
     }
 }
-// Vector is local, but elements must be freed
-items.clear();
+free_content(items);  // Frees all ValuePtr elements
 ```
 
 ### Complete Memory Management Example
@@ -478,17 +476,71 @@ void proper_memory_management_example() {
     // Step 6: Stream container (caller owns all elements)
     std::vector<ValuePtr> items = client.streamList(key, nullptr).get();
     
-    for (auto item : items) {
+    for (const auto& item : items) {
         if (item) {
             std::cout << "Item: " << std::string(item->data, item->size) << "\n";
-            delete item;  // Value destructor frees data
         }
     }
-    items.clear();
+    free_content(items);  // Free all elements
     
     // Step 7: Cleanup key data (if dynamically allocated)
     // Note: const_cast<char*> points to string literal, don't free it!
 }
+```
+
+### Memory Deallocation
+
+**All memory allocated by the client must be freed by the caller.** Use the `free_content()` helper from `utils.hxx` for convenient cleanup.
+
+#### Freeing Single Values
+
+```cpp
+// ✅ CORRECT: Free individual values
+ValuePtr value = client.getValue(key, nullptr).get();
+if (value) {
+    // Use value...
+    delete value;  // Value destructor automatically frees value->data
+}
+```
+
+#### Freeing Container Elements (Vectors)
+
+```cpp
+// ✅ CORRECT: Use free_content for vectors
+auto items = client.streamList(key, nullptr).get();
+
+for (const auto& item : items) {
+    std::cout << "Item: " << std::string(item->data, item->size) << "\n";
+}
+
+free_content(items);  // Frees all ValuePtr elements
+```
+
+#### Freeing Map Entries
+
+```cpp
+// ✅ CORRECT: Use free_content for maps
+auto map_data = client.streamMap(key, nullptr).get();
+
+for (const auto& [key, value] : map_data) {
+    std::cout << "Key: " << std::string(key->data, key->size) << "\n";
+    std::cout << "Value: " << std::string(value->data, value->size) << "\n";
+}
+
+free_content(map_data);  // Frees both keys and values
+```
+
+#### Freeing Ordered Containers
+
+```cpp
+// ✅ CORRECT: Use free_content for ordered containers
+auto ordered_items = client.streamOrderedSet(key, nullptr).get();
+
+for (const auto& item : ordered_items) {
+    std::cout << "Weight: " << item->weight << "\n";
+}
+
+free_content(ordered_items);  // Frees all OrderedValuePtr elements
 ```
 
 ### Memory Management Quick Reference
@@ -500,8 +552,8 @@ void proper_memory_management_example() {
 | `const Value &value` | Input | Caller | Caller |
 | `ValuePtr` (return) | Output | Caller | **Caller** (`delete result;`) |
 | `KeyPtr` (return) | Output | Caller | **Caller** (`delete result;`) |
-| `std::vector<ValuePtr>` | Output | Caller | **Caller** (`delete` each element) |
-| `std::map<KeyPtr, ValuePtr>` | Output | Caller | **Caller** (`delete` each key and value) |
+| `std::vector<ValuePtr>` | Output | Caller | **Caller** (`free_content(container);`) |
+| `std::map<KeyPtr, ValuePtr>` | Output | Caller | **Caller** (`free_content(map);`) |
 | `std::vector<Key>` | Input | Caller | Caller |
 
 ### Common Pitfalls
