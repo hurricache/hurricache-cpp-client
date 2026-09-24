@@ -72,11 +72,11 @@ static void testStreamVectorContents(FastCacheStandaloneClient &client) {
         
         auto items = client.streamVector(key).get();
         assert(items.size() == 5);
-        free_content(items);
         for (int i = 0; i < 5; ++i) {
             std::string expected(1, static_cast<char>('a' + i));
             assert(std::string(items[i]->data, items[i]->size) == expected);
         }
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";

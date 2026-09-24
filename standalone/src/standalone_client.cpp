@@ -1126,7 +1126,7 @@ std::future<uint32_t> FastCacheStandaloneClient::addElementOrderedMap(const Key 
 
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
     request.set_type(hurricache::ContainerType::ORDERED_MAP);
-    if (container_keys != nullptr && container_values != nullptr && container_keys->size() != container_values->
+    if (container_keys != nullptr && container_values != nullptr && container_keys->size() == container_values->
         size()) {
         auto size = std::min(container_keys->size(), container_values->size());
         for (size_t i = 0; i < size; ++i) {
