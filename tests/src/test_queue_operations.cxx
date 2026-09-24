@@ -9,6 +9,7 @@
 #include <cassert>
 #include <thread>
 #include "test_base.hxx"
+#include "utils.hxx"
 
 static void testCreateEmptyQueue(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateEmptyQueue... ";

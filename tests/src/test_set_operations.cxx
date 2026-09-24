@@ -9,6 +9,7 @@
 #include <cassert>
 #include <set>
 #include "test_base.hxx"
+#include "utils.hxx"
 
 static void testCreateEmptySet(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateEmptySet... ";
@@ -18,6 +19,7 @@ static void testCreateEmptySet(FastCacheStandaloneClient &client) {
         
         auto items = client.streamSet(key).get();
         assert(items.size() == 0);
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -40,6 +42,7 @@ static void testCreateSetWithInitialData(FastCacheStandaloneClient &client) {
         
         auto items = client.streamSet(key).get();
         assert(items.size() == 3);
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -63,6 +66,7 @@ static void testStreamSetContents(FastCacheStandaloneClient &client) {
         
         auto items = client.streamSet(key).get();
         assert(items.size() == 5);
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";

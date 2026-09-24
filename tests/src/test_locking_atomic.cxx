@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include "standalone_client.hxx"
 #include "test_base.hxx"
+#include "utils.hxx"
 
 // =========================================================================
 // Locking Tests
@@ -359,7 +360,7 @@ static void testAddElementOrderedMap(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("orderedMapAdd1");
         
-        std::map<OrderedKey, OrderedValue> initial;
+        std::map<OrderedKeyPtr, OrderedValuePtr> initial;
         client.createOrderedMap(key, nullptr, &initial).get();
         
         std::vector<OrderedValuePtr> containerKeys;

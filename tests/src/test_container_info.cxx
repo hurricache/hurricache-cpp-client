@@ -9,6 +9,7 @@
 #include <string>
 #include <cassert>
 #include "test_base.hxx"
+#include "utils.hxx"
 
 static void testGetSize(FastCacheStandaloneClient &client) {
     std::cout << "  testGetSize... ";
@@ -49,6 +50,7 @@ static void testGetHead(FastCacheStandaloneClient &client) {
         
         auto head = client.getHead(key).get();
         assert(std::string(head->data, head->size) == "head");
+        delete head;
         
         // Vector should remain unchanged
         auto items = client.streamVector(key).get();

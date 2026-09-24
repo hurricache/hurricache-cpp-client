@@ -154,4 +154,22 @@ hurricache::CreateContainerRequest buildContainerRequestOrdered(
     hurricache::ContainerType type, std::chrono::milliseconds ttl,
     const std::vector<OrderedValuePtr> *values,int32_t defaultCompressionThreshold=1024);
 
+//used to clean up data returned by functions
+template<typename T>
+void free_content(std::vector<T> &content) {
+    for (const auto & item : content) {
+        delete item;
+    }
+}
+
+//used to clean up data returned by functions
+template<typename Key, typename Value>
+void free_content(std::map<Key,Value> &content) {
+    for (const auto & [key, value] : content) {
+        delete key;
+        delete value;
+    }
+}
+
+
 #endif //HURRICACHE_CPP_CLIENT_UTILS_HXX

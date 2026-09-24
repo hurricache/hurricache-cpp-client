@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include "standalone_client.hxx"
 #include "test_base.hxx"
+#include "utils.hxx"
 
 static void testCreateQueue(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateQueue... ";
@@ -27,6 +28,7 @@ static void testCreateQueue(FastCacheStandaloneClient &client) {
         // Verify by streaming
         auto items = client.streamVector(key).get();
         assert(items.size() == 2);
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -48,6 +50,7 @@ static void testCreateList(FastCacheStandaloneClient &client) {
         
         auto items = client.streamList(key).get();
         assert(items.size() == 2);
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -69,6 +72,7 @@ static void testCreateVector(FastCacheStandaloneClient &client) {
         
         auto items = client.streamVector(key).get();
         assert(items.size() == 2);
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -90,6 +94,7 @@ static void testCreateSet(FastCacheStandaloneClient &client) {
         
         auto items = client.streamSet(key).get();
         assert(items.size() == 2);
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -111,6 +116,7 @@ static void testCreateOrderedSet(FastCacheStandaloneClient &client) {
         
         auto items = client.streamOrderedSet(key).get();
         assert(items.size() == 2);
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -133,6 +139,7 @@ static void testCreateMap(FastCacheStandaloneClient &client) {
 
         auto items = client.streamMap(key).get();
         assert(items.size() == 2);
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -145,12 +152,13 @@ static void testCreateOrderedMap(FastCacheStandaloneClient &client) {
         Key key = test_base::make_key("omap1");
 
         // Create empty ordered map first
-        std::map<OrderedKey, OrderedValue> initial;
+        std::map<OrderedKeyPtr, OrderedValuePtr> initial;
         auto hint = client.createOrderedMap(key, nullptr, &initial).get();
         assert(hint.strong_hash != 0);
 
         auto items = client.streamOrderedMap(key).get();
         assert(items.size() == 0);
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";

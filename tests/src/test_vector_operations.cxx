@@ -8,6 +8,8 @@
 #include <string>
 #include <cassert>
 #include "test_base.hxx"
+#include "utils.hxx"
+#include "utils.hxx"
 
 static void testCreateEmptyVector(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateEmptyVector... ";
@@ -19,6 +21,7 @@ static void testCreateEmptyVector(FastCacheStandaloneClient &client) {
         
         auto items = client.streamVector(key).get();
         assert(items.size() == 0);
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -67,6 +70,7 @@ static void testStreamVectorContents(FastCacheStandaloneClient &client) {
         
         auto items = client.streamVector(key).get();
         assert(items.size() == 5);
+        free_content(items);
         for (int i = 0; i < 5; ++i) {
             std::string expected(1, static_cast<char>('a' + i));
             assert(std::string(items[i]->data, items[i]->size) == expected);
@@ -91,6 +95,7 @@ static void testGetAndRemoveFront(FastCacheStandaloneClient &client) {
         
         auto removed = client.getAndRemoveFront(key).get();
         assert(std::string(removed->data, removed->size) == "first");
+        delete removed;
         
         auto remaining = client.streamVector(key).get();
         assert(remaining.size() == 2);
@@ -115,6 +120,7 @@ static void testGetAndRemoveFrontOnSingleElement(FastCacheStandaloneClient &clie
         
         auto remaining = client.streamVector(key).get();
         assert(remaining.size() == 0);
+        free_content(remaining);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -134,6 +140,7 @@ static void testGetHead(FastCacheStandaloneClient &client) {
         
         auto head = client.getHead(key).get();
         assert(std::string(head->data, head->size) == "head");
+        delete head;
         
         // Vector should remain unchanged
         auto items = client.streamVector(key).get();
@@ -158,6 +165,7 @@ static void testGetTail(FastCacheStandaloneClient &client) {
         
         auto tail = client.getTail(key).get();
         assert(std::string(tail->data, tail->size) == "last");
+        delete tail;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -206,8 +214,11 @@ static void testGetElementAtPosition(FastCacheStandaloneClient &client) {
         auto pos2 = client.getElementAtPosition(key, nullptr, 2).get();
         
         assert(std::string(pos0->data, pos0->size) == "pos0");
+        delete pos0;
         assert(std::string(pos1->data, pos1->size) == "pos1");
+        delete pos1;
         assert(std::string(pos2->data, pos2->size) == "pos2");
+        delete pos2;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";

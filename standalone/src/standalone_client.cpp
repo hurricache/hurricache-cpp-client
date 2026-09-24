@@ -321,7 +321,7 @@ std::future<KeyHint> FastCacheStandaloneClient::createMap(const Key &key, const 
 }
 
 std::future<KeyHint> FastCacheStandaloneClient::createOrderedMap(const Key &key, const KeyHint *hint,
-                                                                 const std::map<OrderedKey, OrderedValue> *initialValue,
+                                                                 const std::map<OrderedKeyPtr, OrderedValuePtr> *initialValue,
                                                                  std::chrono::milliseconds ttl, int32_t clientId,
                                                                  std::chrono::milliseconds timeout) {
     hurricache::CreateContainerRequest request;
@@ -337,12 +337,12 @@ std::future<KeyHint> FastCacheStandaloneClient::createOrderedMap(const Key &key,
     if (initialValue != nullptr) {
         for (const auto &[ok, ov]: *initialValue) {
             auto *pk = request.add_key_ordered();
-            pk->mutable_payload()->set_size(ok.size);
-            pk->mutable_payload()->mutable_payload()->assign(ok.data, ok.size);
-            pk->set_order(ok.weight);
+            pk->mutable_payload()->set_size(ok->size);
+            pk->mutable_payload()->mutable_payload()->assign(ok->data, ok->size);
+            pk->set_order(ok->weight);
             auto *pv = request.add_value_unordered();
-            pv->mutable_value()->set_size(static_cast<uint32_t>(ov.size));
-            pv->mutable_value()->set_payload(absl::string_view(ov.data, static_cast<size_t>(ov.size)));
+            pv->mutable_value()->set_size(static_cast<uint32_t>(ov->size));
+            pv->mutable_value()->set_payload(absl::string_view(ov->data, static_cast<size_t>(ov->size)));
         }
     }
 

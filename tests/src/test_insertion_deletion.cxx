@@ -9,6 +9,7 @@
 #include <cassert>
 #include "standalone_client.hxx"
 #include "test_base.hxx"
+#include "utils.hxx"
 
 static void testAddElementUnordered(FastCacheStandaloneClient &client) {
     std::cout << "  testAddElementUnordered... ";

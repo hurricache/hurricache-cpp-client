@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include "standalone_client.hxx"
 #include "test_base.hxx"
+#include "utils.hxx"
 
 static void testStreamList(FastCacheStandaloneClient &client) {
     std::cout << "  testStreamList... ";

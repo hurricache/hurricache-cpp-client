@@ -129,7 +129,7 @@ public:
                                                  std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
     [[nodiscard]] std::future<KeyHint> createOrderedMap(const Key &key, const KeyHint *keyHint = nullptr,
-                                                        const std::map<OrderedKey, OrderedValue> *initialValue =
+                                                        const std::map<OrderedKeyPtr, OrderedValuePtr> *initialValue =
                                                                 nullptr,
                                                         std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
                                                         int32_t clientId = 0,

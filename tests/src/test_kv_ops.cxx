@@ -10,6 +10,7 @@
 #include <string>
 #include "standalone_client.hxx"
 #include "test_base.hxx"
+#include "utils.hxx"
 
 static void testCreateKeyValue(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateKeyValue... ";

@@ -5,7 +5,6 @@
 
 #include <string>
 #include <cstring>
-#include <cstdlib>
 #include <random>
 #include "standalone_client.hxx"
 
