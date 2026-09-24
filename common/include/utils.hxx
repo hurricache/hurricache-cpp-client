@@ -32,7 +32,7 @@ inline KeyHint *calculateKeyHint(const Key &key) {
                                                                 const Key &elementKey);
 
 ::hurricache::KeyPositionRequest buildPositionRequestProto(const Key &key, const KeyHint *hint, int32_t clientId,
-                                                           int32_t pos);
+                                                           uint64_t pos);
 
 inline ::hurricache::Value buildValueProtoNoTtl(const ValuePtr value, int32_t clientId,int32_t defaultCompressionThreshold=1024) {
     return buildValueProto(*value, std::chrono::milliseconds{0}, clientId,defaultCompressionThreshold);

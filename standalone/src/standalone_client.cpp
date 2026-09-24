@@ -102,7 +102,7 @@ FastCacheStandaloneClient::~FastCacheStandaloneClient() {
 // TTL MANAGEMENT
 // =========================================================================
 
-std::future<bool> FastCacheStandaloneClient::setTtl(const Key &key, const KeyHint *hint, int64_t ttl,
+std::future<bool> FastCacheStandaloneClient::setTtl(const Key &key, const KeyHint *hint, uint64_t ttl,
                                                     int32_t clientId, std::chrono::milliseconds timeout) {
     hurricache::TtlRequest request;
     
@@ -110,7 +110,7 @@ std::future<bool> FastCacheStandaloneClient::setTtl(const Key &key, const KeyHin
 
     auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
-    request.set_ttl(static_cast<uint64_t>(now_ms) + static_cast<uint64_t>(ttl));
+    request.set_ttl(static_cast<uint64_t>(now_ms) + ttl);
 
     return SendAsyncRequest<hurricache::TtlRequest, hurricache::BoolResponse, bool>(
         request, timeout,
@@ -148,7 +148,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getAndDeleteValue(const Key &ke
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetAndDeleteValue,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value();
+                return nullptr;
             }
             return valueRequestToValue(resp.value_unordered());
         });
@@ -182,7 +182,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getValue(const Key &key, const 
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetValue,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value();
+                return nullptr;
             }
             return valueRequestToValue(resp.value_unordered());
         });
@@ -201,7 +201,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::updateKeyValue(const Key &key, 
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncupdateValue,
         [](hurricache::UpdateValueResponse &resp) -> ValuePtr {
             if (!resp.has_value()) {
-                return new Value();
+                return nullptr;
             }
             return valueRequestToValue(resp.value());
         });
@@ -363,12 +363,12 @@ std::future<KeyHint> FastCacheStandaloneClient::createOrderedMap(const Key &key,
 // CONTAINER INFO & BOUNDARY READS
 // =========================================================================
 
-std::future<int32_t> FastCacheStandaloneClient::getSize(const Key &key, const KeyHint *hint, int32_t clientId,
+std::future<uint32_t> FastCacheStandaloneClient::getSize(const Key &key, const KeyHint *hint, int32_t clientId,
                                                         std::chrono::milliseconds timeout) {
-    return SendAsyncRequest<hurricache::GetRequest, hurricache::IntResponse, int32_t>(
+    return SendAsyncRequest<hurricache::GetRequest, hurricache::IntResponse, uint32_t>(
         buildGetRequestProto(key, hint, clientId,defaultCompressionThreshold_), timeout,
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetSize,
-        [](hurricache::IntResponse &resp) -> int32_t { return static_cast<int32_t>(resp.size()); });
+        [](hurricache::IntResponse &resp) -> uint32_t { return static_cast<uint32_t>(resp.size()); });
 }
 
 std::future<ValuePtr> FastCacheStandaloneClient::getHead(const Key &key, const KeyHint *hint, int32_t clientId,
@@ -378,7 +378,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getHead(const Key &key, const K
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetHead,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value();
+                return nullptr;
             }
             return valueRequestToValue(resp.value_unordered());
         });
@@ -391,7 +391,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getTail(const Key &key, const K
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetTail,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value();
+                return nullptr;
             }
             return valueRequestToValue(resp.value_unordered());
         });
@@ -402,7 +402,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getTail(const Key &key, const K
 // =========================================================================
 
 
-std::future<ValuePtr> FastCacheStandaloneClient::getElementAtPosition(const Key &key, const KeyHint *hint, int32_t pos,
+std::future<ValuePtr> FastCacheStandaloneClient::getElementAtPosition(const Key &key, const KeyHint *hint, uint64_t pos,
                                                                    int32_t clientId,
                                                                    std::chrono::milliseconds timeout) {
     
@@ -411,13 +411,13 @@ std::future<ValuePtr> FastCacheStandaloneClient::getElementAtPosition(const Key 
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetElementAtPosition,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value();
+                return nullptr;
             }
             return valueRequestToValue(resp.value_unordered());
         });
 }
 
-std::future<ValuePtr> FastCacheStandaloneClient::getElementWithWeight(const Key &key, const KeyHint *hint, int32_t pos,
+std::future<ValuePtr> FastCacheStandaloneClient::getElementWithWeight(const Key &key, const KeyHint *hint, uint64_t pos,
                                                                    int32_t clientId,
                                                                    std::chrono::milliseconds timeout) {
     return getElementAtPosition(key, hint, pos, clientId, timeout);
@@ -435,7 +435,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getAndRemoveFront(const Key &ke
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetAndRemoveFront,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value();
+                return nullptr;
             }
             return valueRequestToValue(resp.value_unordered());
         });
@@ -449,14 +449,14 @@ std::future<ValuePtr> FastCacheStandaloneClient::getAndRemoveTail(const Key &key
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetAndRemoveTail,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value();
+                return nullptr;
             }
             return valueRequestToValue(resp.value_unordered());
         });
 }
 
 std::future<ValuePtr> FastCacheStandaloneClient::getAndRemoveElementAtPosition(const Key &key, const KeyHint *hint,
-                                                                            int32_t pos, int32_t clientId,
+                                                                            uint64_t pos, int32_t clientId,
                                                                             std::chrono::milliseconds timeout) {
     
     return SendAsyncRequest<hurricache::KeyPositionRequest, hurricache::ValueResponse, ValuePtr>(
@@ -464,14 +464,14 @@ std::future<ValuePtr> FastCacheStandaloneClient::getAndRemoveElementAtPosition(c
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetAndRemoveElementAtPosition,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value();
+                return nullptr;
             }
             return valueRequestToValue(resp.value_unordered());
         });
 }
 
 std::future<ValuePtr> FastCacheStandaloneClient::getAndRemoveElementWithWeight(const Key &key, const KeyHint *hint,
-                                                                            int32_t pos, int32_t clientId,
+                                                                            uint64_t pos, int32_t clientId,
                                                                             std::chrono::milliseconds timeout) {
     return getAndRemoveElementAtPosition(key, hint, pos, clientId, timeout);
 }
@@ -516,8 +516,7 @@ std::future<std::map<KeyPtr, ValuePtr> > FastCacheStandaloneClient::streamMap(
         [](std::map<KeyPtr, ValuePtr> &result, hurricache::BatchValueResponse &chunk) {
             int count = std::min(chunk.key_unordered_size(), chunk.value_unordered_size());
             for (int i = 0; i < count; ++i) {
-                KeyHint kh;
-                KeyPtr k = keyRequestToKey(chunk.key_unordered(i), &kh);
+                KeyPtr k = keyRequestToKey(chunk.key_unordered(i));
                 ValuePtr v = valueRequestToValue(chunk.value_unordered(i));
                 if (k && v) result[k] = v;
             }
@@ -549,8 +548,7 @@ std::future<std::map<OrderedKeyPtr, ValuePtr> > FastCacheStandaloneClient::strea
         [](std::map<OrderedKeyPtr, ValuePtr> &result, hurricache::BatchValueResponse &chunk) {
             int count = std::min(chunk.key_ordered_size(), chunk.value_unordered_size());
             for (int i = 0; i < count; ++i) {
-                KeyHint kh;
-                OrderedKeyPtr ok = keyRequestToKey(chunk.key_ordered(i), &kh);
+                OrderedKeyPtr ok = keyRequestToKey(chunk.key_ordered(i));
                 ValuePtr v = valueRequestToValue(chunk.value_unordered(i));
                 if (ok && v) {
                     result.emplace(ok,v);
@@ -563,7 +561,7 @@ std::future<std::map<OrderedKeyPtr, ValuePtr> > FastCacheStandaloneClient::strea
 std::future<std::vector<ValuePtr> > FastCacheStandaloneClient::streamElementInRangeUnordered(
     const Key &key, const KeyHint *hint,
     ContainerType containerType,
-    int32_t start, int32_t end,
+    uint64_t start, uint64_t end,
     int32_t clientId,
     std::chrono::milliseconds timeout) {
     
@@ -585,14 +583,14 @@ std::future<std::vector<ValuePtr> > FastCacheStandaloneClient::streamElementInRa
 
 std::future<std::vector<OrderedValuePtr> > FastCacheStandaloneClient::streamElementInRangeOrderedSet(
     const Key &key, const KeyHint *hint,
-    int64_t startWeight, int64_t endWeight,
+    uint64_t startWeight, uint64_t endWeight,
     bool reverse, int32_t clientId,
     std::chrono::milliseconds timeout) {
     
     hurricache::KeyPositionRequest request;
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
-    request.set_pos(static_cast<uint64_t>(startWeight));
-    request.set_end(static_cast<uint64_t>(endWeight));
+    request.set_pos(startWeight);
+    request.set_end(endWeight);
     request.set_type(hurricache::ContainerType::ORDERED_SET);
     request.set_reverse(reverse);
 
@@ -609,14 +607,14 @@ std::future<std::vector<OrderedValuePtr> > FastCacheStandaloneClient::streamElem
 
 std::future<std::map<OrderedKeyPtr, ValuePtr>> FastCacheStandaloneClient::streamElementInRangeOrderedMap(
     const Key &key, const KeyHint *hint,
-    int64_t startWeight, int64_t endWeight,
+    uint64_t startWeight, uint64_t endWeight,
     bool reverse, int32_t clientId,
     std::chrono::milliseconds timeout) {
     
     hurricache::KeyPositionRequest request;
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
-    request.set_pos(static_cast<uint64_t>(startWeight));
-    request.set_end(static_cast<uint64_t>(endWeight));
+    request.set_pos(startWeight);
+    request.set_end(endWeight);
     request.set_type(hurricache::ContainerType::ORDERED_MAP);
     request.set_reverse(reverse);
 
@@ -626,8 +624,7 @@ std::future<std::map<OrderedKeyPtr, ValuePtr>> FastCacheStandaloneClient::stream
         [](std::map<OrderedKeyPtr, ValuePtr> &result, hurricache::BatchValueResponse &chunk) {
             int count = std::min(chunk.key_ordered_size(), chunk.value_unordered_size());
             for (int i = 0; i < count; ++i) {
-                KeyHint kh;
-                OrderedKeyPtr ok = keyRequestToKey(chunk.key_ordered(i), &kh);
+                OrderedKeyPtr ok = keyRequestToKey(chunk.key_ordered(i));
                 ValuePtr v = valueRequestToValue(chunk.value_unordered(i));
                 if (ok && v) {
                     result.emplace(ok, v);
@@ -649,9 +646,9 @@ std::future<std::map<OrderedKeyPtr, ValuePtr>> FastCacheStandaloneClient::stream
 //     return request;
 // }
 
-std::future<int32_t> FastCacheStandaloneClient::addElementUnordered(const Key &key, const KeyHint *hint,
-                                                                    const std::vector<ValuePtr> *data, int32_t clientId,
-                                                                    std::chrono::milliseconds timeout) {
+std::future<uint32_t> FastCacheStandaloneClient::addElementUnordered(const Key &key, const KeyHint *hint,
+                                                                     const std::vector<ValuePtr> *data, int32_t clientId,
+                                                                     std::chrono::milliseconds timeout) {
     hurricache::AddToRequest request;
     
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
@@ -660,15 +657,15 @@ std::future<int32_t> FastCacheStandaloneClient::addElementUnordered(const Key &k
             *request.add_value_unordered() = buildValueProtoNoTtl(v, clientId);
         }
     }
-    return SendAsyncRequest<hurricache::AddToRequest, hurricache::IntResponse, int32_t>(
+    return SendAsyncRequest<hurricache::AddToRequest, hurricache::IntResponse, uint32_t>(
         request, timeout, &hurricache::HurriCacheGrpcService::StubInterface::AsyncaddElement,
-        [](hurricache::IntResponse &resp) -> int32_t { return static_cast<int32_t>(resp.size()); });
+        [](hurricache::IntResponse &resp) -> uint32_t { return static_cast<uint32_t>(resp.size()); });
 }
 
-std::future<int32_t> FastCacheStandaloneClient::addElementWithWeight(const Key &key, const KeyHint *hint,
-                                                                     const std::vector<OrderedValuePtr> *data,
-                                                                     int32_t clientId,
-                                                                     std::chrono::milliseconds timeout) {
+std::future<uint32_t> FastCacheStandaloneClient::addElementWithWeight(const Key &key, const KeyHint *hint,
+                                                                      const std::vector<OrderedValuePtr> *data,
+                                                                      int32_t clientId,
+                                                                      std::chrono::milliseconds timeout) {
     hurricache::AddToRequest request;
     
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
@@ -680,14 +677,14 @@ std::future<int32_t> FastCacheStandaloneClient::addElementWithWeight(const Key &
             ordered_val->mutable_value()->set_payload(absl::string_view(ov->data, static_cast<size_t>(ov->size)));
         }
     }
-    return SendAsyncRequest<hurricache::AddToRequest, hurricache::IntResponse, int32_t>(
+    return SendAsyncRequest<hurricache::AddToRequest, hurricache::IntResponse, uint32_t>(
         request, timeout, &hurricache::HurriCacheGrpcService::StubInterface::AsyncaddElement,
-        [](hurricache::IntResponse &resp) -> int32_t { return static_cast<int32_t>(resp.size()); });
+        [](hurricache::IntResponse &resp) -> uint32_t { return static_cast<uint32_t>(resp.size()); });
 }
 
-std::future<int32_t> FastCacheStandaloneClient::addElementToTail(const Key &key, const KeyHint *hint,
-                                                                 const std::vector<ValuePtr> *data, int32_t clientId,
-                                                                 std::chrono::milliseconds timeout) {
+std::future<uint32_t> FastCacheStandaloneClient::addElementToTail(const Key &key, const KeyHint *hint,
+                                                                  const std::vector<ValuePtr> *data, int32_t clientId,
+                                                                  std::chrono::milliseconds timeout) {
     hurricache::AddToRequest request;
     
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
@@ -696,14 +693,14 @@ std::future<int32_t> FastCacheStandaloneClient::addElementToTail(const Key &key,
             *request.add_value_unordered() = buildValueProtoNoTtl(v, clientId);
         }
     }
-    return SendAsyncRequest<hurricache::AddToRequest, hurricache::IntResponse, int32_t>(
+    return SendAsyncRequest<hurricache::AddToRequest, hurricache::IntResponse, uint32_t>(
         request, timeout, &hurricache::HurriCacheGrpcService::StubInterface::AsyncaddElementToTail,
-        [](hurricache::IntResponse &resp) -> int32_t { return static_cast<int32_t>(resp.size()); });
+        [](hurricache::IntResponse &resp) -> uint32_t { return static_cast<uint32_t>(resp.size()); });
 }
 
-std::future<int32_t> FastCacheStandaloneClient::addElementToHead(const Key &key, const KeyHint *hint,
-                                                                 const std::vector<ValuePtr> *data, int32_t clientId,
-                                                                 std::chrono::milliseconds timeout) {
+std::future<uint32_t> FastCacheStandaloneClient::addElementToHead(const Key &key, const KeyHint *hint,
+                                                                  const std::vector<ValuePtr> *data, int32_t clientId,
+                                                                  std::chrono::milliseconds timeout) {
     hurricache::AddToRequest request;
     
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
@@ -712,15 +709,15 @@ std::future<int32_t> FastCacheStandaloneClient::addElementToHead(const Key &key,
             *request.add_value_unordered() = buildValueProtoNoTtl(v, clientId);
         }
     }
-    return SendAsyncRequest<hurricache::AddToRequest, hurricache::IntResponse, int32_t>(
+    return SendAsyncRequest<hurricache::AddToRequest, hurricache::IntResponse, uint32_t>(
         request, timeout, &hurricache::HurriCacheGrpcService::StubInterface::AsyncaddElementToHead,
-        [](hurricache::IntResponse &resp) -> int32_t { return static_cast<int32_t>(resp.size()); });
+        [](hurricache::IntResponse &resp) -> uint32_t { return static_cast<uint32_t>(resp.size()); });
 }
 
-std::future<int32_t> FastCacheStandaloneClient::addElementToPosition(const Key &key, const KeyHint *hint,
-                                                                     const std::vector<ValuePtr> *data, int32_t pos,
-                                                                     int32_t clientId,
-                                                                     std::chrono::milliseconds timeout) {
+std::future<uint32_t> FastCacheStandaloneClient::addElementToPosition(const Key &key, const KeyHint *hint,
+                                                                      const std::vector<ValuePtr> *data, uint32_t pos,
+                                                                      int32_t clientId,
+                                                                      std::chrono::milliseconds timeout) {
     hurricache::AddToRequest request;
     
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
@@ -730,16 +727,16 @@ std::future<int32_t> FastCacheStandaloneClient::addElementToPosition(const Key &
             *request.add_value_unordered() = buildValueProtoNoTtl(v, clientId);
         }
     }
-    return SendAsyncRequest<hurricache::AddToRequest, hurricache::IntResponse, int32_t>(
+    return SendAsyncRequest<hurricache::AddToRequest, hurricache::IntResponse, uint32_t>(
         request, timeout, &hurricache::HurriCacheGrpcService::StubInterface::AsyncaddElement,
-        [](hurricache::IntResponse &resp) -> int32_t { return static_cast<int32_t>(resp.size()); });
+        [](hurricache::IntResponse &resp) -> uint32_t { return static_cast<uint32_t>(resp.size()); });
 }
 
-std::future<int32_t> FastCacheStandaloneClient::addElementToPositionBefore(const Key &key, const KeyHint *hint,
-                                                                           const std::vector<ValuePtr> *data,
-                                                                           const ValuePtr pivot,
-                                                                           int32_t clientId,
-                                                                           std::chrono::milliseconds timeout) {
+std::future<uint32_t> FastCacheStandaloneClient::addElementToPositionBefore(const Key &key, const KeyHint *hint,
+                                                                            const std::vector<ValuePtr> *data,
+                                                                            ValuePtr pivot,
+                                                                            int32_t clientId,
+                                                                            std::chrono::milliseconds timeout) {
     hurricache::AddToValRequest request;
     
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
@@ -750,16 +747,16 @@ std::future<int32_t> FastCacheStandaloneClient::addElementToPositionBefore(const
             *request.add_value() = buildValueProtoNoTtl(v, clientId);
         }
     }
-    return SendAsyncRequest<hurricache::AddToValRequest, hurricache::IntResponse, int32_t>(
+    return SendAsyncRequest<hurricache::AddToValRequest, hurricache::IntResponse, uint32_t>(
         request, timeout, &hurricache::HurriCacheGrpcService::StubInterface::AsyncaddElementToPositionByValue,
-        [](hurricache::IntResponse &resp) -> int32_t { return static_cast<int32_t>(resp.size()); });
+        [](hurricache::IntResponse &resp) -> uint32_t { return static_cast<uint32_t>(resp.size()); });
 }
 
-std::future<int32_t> FastCacheStandaloneClient::addElementToPositionAfter(const Key &key, const KeyHint *hint,
-                                                                          const std::vector<ValuePtr> *data,
-                                                                          const ValuePtr pivot,
-                                                                          int32_t clientId,
-                                                                          std::chrono::milliseconds timeout) {
+std::future<uint32_t> FastCacheStandaloneClient::addElementToPositionAfter(const Key &key, const KeyHint *hint,
+                                                                           const std::vector<ValuePtr> *data,
+                                                                           ValuePtr pivot,
+                                                                           int32_t clientId,
+                                                                           std::chrono::milliseconds timeout) {
     hurricache::AddToValRequest request;
     
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
@@ -770,9 +767,9 @@ std::future<int32_t> FastCacheStandaloneClient::addElementToPositionAfter(const 
             *request.add_value() = buildValueProtoNoTtl(v, clientId);
         }
     }
-    return SendAsyncRequest<hurricache::AddToValRequest, hurricache::IntResponse, int32_t>(
+    return SendAsyncRequest<hurricache::AddToValRequest, hurricache::IntResponse, uint32_t>(
         request, timeout, &hurricache::HurriCacheGrpcService::StubInterface::AsyncaddElementToPositionByValue,
-        [](hurricache::IntResponse &resp) -> int32_t { return static_cast<int32_t>(resp.size()); });
+        [](hurricache::IntResponse &resp) -> uint32_t { return static_cast<uint32_t>(resp.size()); });
 }
 
 // =========================================================================
@@ -797,22 +794,22 @@ std::future<bool> FastCacheStandaloneClient::removeTail(const Key &key, const Ke
         [](hurricache::BoolResponse &resp) -> bool { return resp.value(); });
 }
 
-std::future<bool> FastCacheStandaloneClient::removeElementAtPosition(const Key &key, const KeyHint *hint, int64_t pos,
-                                                                     int64_t endPos, int32_t clientId,
+std::future<bool> FastCacheStandaloneClient::removeElementAtPosition(const Key &key, const KeyHint *hint, uint64_t pos,
+                                                                     uint64_t endPos, int32_t clientId,
                                                                      std::chrono::milliseconds timeout) {
     
     hurricache::KeyPositionRequest request;
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
-    request.set_pos(static_cast<uint64_t>(pos));
+    request.set_pos(pos);
     if (endPos > pos) {
-        request.set_end(static_cast<uint64_t>(endPos));
+        request.set_end(endPos);
     }
     return SendAsyncRequest<hurricache::KeyPositionRequest, hurricache::BoolResponse, bool>(
         request, timeout, &hurricache::HurriCacheGrpcService::StubInterface::AsyncremoveElementAtPosition,
         [](hurricache::BoolResponse &resp) -> bool { return resp.value(); });
 }
 
-std::future<int32_t> FastCacheStandaloneClient::removeFromContainer(const Key &key, const KeyHint *hint,
+std::future<uint32_t> FastCacheStandaloneClient::removeFromContainer(const Key &key, const KeyHint *hint,
                                                                     ContainerType type,
                                                                     const std::vector<KeyPtr> *keys,
                                                                     const std::vector<ValuePtr> *values,
@@ -835,9 +832,9 @@ std::future<int32_t> FastCacheStandaloneClient::removeFromContainer(const Key &k
         }
     }
 
-    return SendAsyncRequest<hurricache::RemoveFromContainerRequest, hurricache::IntResponse, int32_t>(
+    return SendAsyncRequest<hurricache::RemoveFromContainerRequest, hurricache::IntResponse, uint32_t>(
         request, timeout, &hurricache::HurriCacheGrpcService::StubInterface::AsyncremoveFromContainerByKeyValue,
-        [](hurricache::IntResponse &resp) -> int32_t { return static_cast<int32_t>(resp.size()); });
+        [](hurricache::IntResponse &resp) -> uint32_t { return static_cast<uint32_t>(resp.size()); });
 }
 
 // =========================================================================
@@ -1025,7 +1022,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getContainerValue(const Key &ke
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetValueInContainer,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value();
+                return nullptr;
             }
             return valueRequestToValue(resp.value_unordered());
         });
@@ -1040,7 +1037,7 @@ std::future<ValuePtr> FastCacheStandaloneClient::getAndRemoveContainerValue(cons
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetAndDeleteValueInContainer,
         [](hurricache::ValueResponse &resp) -> ValuePtr {
             if (!resp.has_value_unordered()) {
-                return new Value();
+                return nullptr;
             }
             return valueRequestToValue(resp.value_unordered());
         });
@@ -1071,23 +1068,23 @@ std::future<ValuePtr> FastCacheStandaloneClient::updateContainerValue(const Key 
         request, timeout, &hurricache::HurriCacheGrpcService::StubInterface::AsyncupdateValueInContainer,
         [](hurricache::UpdateValueResponse &resp) -> ValuePtr {
             if (!resp.has_value()) {
-                return new Value();
+                return nullptr;
             }
             return valueRequestToValue(resp.value());
         });
 }
 
-std::future<int32_t> FastCacheStandaloneClient::removeFromContainer(const Key &key, const KeyHint *hint,
+std::future<uint32_t> FastCacheStandaloneClient::removeFromContainer(const Key &key, const KeyHint *hint,
                                                                     const Key &elementKey, int32_t clientId,
                                                                     std::chrono::milliseconds timeout) {
     
-    return SendAsyncRequest<hurricache::ContainerGetRequest, hurricache::IntResponse, int32_t>(
+    return SendAsyncRequest<hurricache::ContainerGetRequest, hurricache::IntResponse, uint32_t>(
         buildContainerGetRequestProto(key, hint, clientId, elementKey), timeout,
         &hurricache::HurriCacheGrpcService::StubInterface::AsyncremoveInContainer,
-        [](hurricache::IntResponse &resp) -> int32_t { return static_cast<int32_t>(resp.size()); });
+        [](hurricache::IntResponse &resp) -> uint32_t { return static_cast<uint32_t>(resp.size()); });
 }
 
-std::future<int32_t> FastCacheStandaloneClient::addElementHashMap(const Key &key, const KeyHint *hint,
+std::future<uint32_t> FastCacheStandaloneClient::addElementHashMap(const Key &key, const KeyHint *hint,
                                                                   const std::vector<KeyPtr> *container_keys,
                                                                   const std::vector<ValuePtr> *container_values,
                                                                   int32_t clientId, std::chrono::milliseconds timeout) {
@@ -1104,12 +1101,12 @@ std::future<int32_t> FastCacheStandaloneClient::addElementHashMap(const Key &key
         *request.add_value_unordered() = buildValueProtoNoTtl(container_values->at(i), clientId);
     }
     }
-    return SendAsyncRequest<hurricache::AddToRequest, hurricache::IntResponse, int32_t>(
+    return SendAsyncRequest<hurricache::AddToRequest, hurricache::IntResponse, uint32_t>(
         request, timeout, &hurricache::HurriCacheGrpcService::StubInterface::AsyncaddElement,
-        [](hurricache::IntResponse &resp) -> int32_t { return static_cast<int32_t>(resp.size()); });
+        [](hurricache::IntResponse &resp) -> uint32_t { return static_cast<uint32_t>(resp.size()); });
 }
 
-std::future<int32_t> FastCacheStandaloneClient::addElementOrderedMap(const Key &key, const KeyHint *hint,
+std::future<uint32_t> FastCacheStandaloneClient::addElementOrderedMap(const Key &key, const KeyHint *hint,
                                                                      const std::vector<OrderedValuePtr> *container_keys,
                                                                      const std::vector<ValuePtr> *container_values,
                                                                      int32_t clientId,
@@ -1128,7 +1125,7 @@ std::future<int32_t> FastCacheStandaloneClient::addElementOrderedMap(const Key &
             *request.add_value_unordered() = buildValueProtoNoTtl(container_values->at(i), clientId);
         }
     }
-    return SendAsyncRequest<hurricache::AddToRequest, hurricache::IntResponse, int32_t>(
+    return SendAsyncRequest<hurricache::AddToRequest, hurricache::IntResponse, uint32_t>(
         request, timeout, &hurricache::HurriCacheGrpcService::StubInterface::AsyncaddElement,
-        [](hurricache::IntResponse &resp) -> int32_t { return static_cast<int32_t>(resp.size()); });
+        [](hurricache::IntResponse &resp) -> uint32_t { return static_cast<uint32_t>(resp.size()); });
 }

@@ -120,14 +120,14 @@
 }
 
 ::hurricache::KeyPositionRequest buildPositionRequestProto(const Key &key, const KeyHint *hint, int32_t clientId,
-                                                           int32_t pos) {
+                                                           uint64_t pos) {
     hurricache::KeyPositionRequest request;
     auto effective_hint = hint == nullptr ? calculateKeyHint(key) : hint;
     *request.mutable_key() = buildKeyProto(key, effective_hint, clientId);
     if (hint == nullptr) {
         delete effective_hint;
     }
-    request.set_pos(static_cast<uint64_t>(pos));
+    request.set_pos(pos);
     return request;
 }
 

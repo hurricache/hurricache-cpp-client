@@ -49,7 +49,7 @@ public:
     // =========================================================================
     // TTL MANAGEMENT
     // =========================================================================
-    [[nodiscard]] std::future<bool> setTtl(const Key &key, const KeyHint *hint, int64_t ttl,
+    [[nodiscard]] std::future<bool> setTtl(const Key &key, const KeyHint *hint, uint64_t ttl,
                                            int32_t clientId = 0,
                                            std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
@@ -136,17 +136,17 @@ public:
                                                         std::chrono::milliseconds timeout =
                                                                 std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<ValuePtr> getElementWithWeight(const Key &key, const KeyHint *hint, int32_t pos,
+    [[nodiscard]] std::future<ValuePtr> getElementWithWeight(const Key &key, const KeyHint *hint, uint64_t pos,
                                                              int32_t clientId = 0,
                                                              std::chrono::milliseconds timeout =
                                                                      std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<ValuePtr> getAndRemoveElementWithWeight(const Key &key, const KeyHint *hint, int32_t pos,
+    [[nodiscard]] std::future<ValuePtr> getAndRemoveElementWithWeight(const Key &key, const KeyHint *hint, uint64_t pos,
                                                                       int32_t clientId = 0,
                                                                       std::chrono::milliseconds timeout =
                                                                               std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int32_t> getSize(const Key &key, const KeyHint *hint = nullptr,
+    [[nodiscard]] std::future<uint32_t> getSize(const Key &key, const KeyHint *hint = nullptr,
                                                int32_t clientId = 0,
                                                std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
@@ -163,7 +163,7 @@ public:
                                                 int32_t clientId = 0,
                                                 std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<ValuePtr> getElementAtPosition(const Key &key, const KeyHint *hint, int32_t pos,
+    [[nodiscard]] std::future<ValuePtr> getElementAtPosition(const Key &key, const KeyHint *hint, uint64_t pos,
                                                              int32_t clientId = 0,
                                                              std::chrono::milliseconds timeout =
                                                                      std::chrono::milliseconds(0));
@@ -201,60 +201,60 @@ public:
 
     [[nodiscard]] std::future<std::vector<ValuePtr> > streamElementInRangeUnordered(
         const Key &key, const KeyHint *hint, ContainerType containerType,
-        int32_t start, int32_t end, int32_t clientId = 0,
+        uint64_t start, uint64_t end, int32_t clientId = 0,
         std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
     [[nodiscard]] std::future<std::vector<OrderedValuePtr> > streamElementInRangeOrderedSet(
-        const Key &key, const KeyHint *hint, int64_t startWeight,
-        int64_t endWeight, bool reverse, int32_t clientId = 0,
+        const Key &key, const KeyHint *hint, uint64_t startWeight,
+        uint64_t endWeight, bool reverse, int32_t clientId = 0,
         std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
     [[nodiscard]] std::future<std::map<OrderedKeyPtr, ValuePtr> > streamElementInRangeOrderedMap(
-        const Key &key, const KeyHint *hint, int64_t startWeight,
-        int64_t endWeight, bool reverse, int32_t clientId = 0,
+        const Key &key, const KeyHint *hint, uint64_t startWeight,
+        uint64_t endWeight, bool reverse, int32_t clientId = 0,
         std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
     // =========================================================================
     // INSERTION OPERATIONS
     // =========================================================================
-    [[nodiscard]] std::future<int32_t> addElementUnordered(const Key &key, const KeyHint *hint = nullptr,
+    [[nodiscard]] std::future<uint32_t> addElementUnordered(const Key &key, const KeyHint *hint = nullptr,
                                                            const std::vector<ValuePtr> *data = nullptr,
                                                            int32_t clientId = 0,
                                                            std::chrono::milliseconds timeout =
                                                                    std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int32_t> addElementWithWeight(const Key &key, const KeyHint *hint = nullptr,
+    [[nodiscard]] std::future<uint32_t> addElementWithWeight(const Key &key, const KeyHint *hint = nullptr,
                                                             const std::vector<OrderedValuePtr> *data = nullptr,
                                                             int32_t clientId = 0,
                                                             std::chrono::milliseconds timeout =
                                                                     std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int32_t> addElementToTail(const Key &key, const KeyHint *hint = nullptr,
+    [[nodiscard]] std::future<uint32_t> addElementToTail(const Key &key, const KeyHint *hint = nullptr,
                                                         const std::vector<ValuePtr> *data = nullptr,
                                                         int32_t clientId = 0,
                                                         std::chrono::milliseconds timeout =
                                                                 std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int32_t> addElementToHead(const Key &key, const KeyHint *hint = nullptr,
+    [[nodiscard]] std::future<uint32_t> addElementToHead(const Key &key, const KeyHint *hint = nullptr,
                                                         const std::vector<ValuePtr> *data = nullptr,
                                                         int32_t clientId = 0,
                                                         std::chrono::milliseconds timeout =
                                                                 std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int32_t> addElementToPosition(const Key &key, const KeyHint *hint,
-                                                            const std::vector<ValuePtr> *data, int32_t pos,
+    [[nodiscard]] std::future<uint32_t> addElementToPosition(const Key &key, const KeyHint *hint,
+                                                            const std::vector<ValuePtr> *data, uint32_t pos,
                                                             int32_t clientId = 0,
                                                             std::chrono::milliseconds timeout =
                                                                     std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int32_t> addElementToPositionBefore(const Key &key, const KeyHint *hint = nullptr,
+    [[nodiscard]] std::future<uint32_t> addElementToPositionBefore(const Key &key, const KeyHint *hint = nullptr,
                                                                   const std::vector<ValuePtr> *data = nullptr,
                                                                   ValuePtr pivot = nullptr,
                                                                   int32_t clientId = 0,
                                                                   std::chrono::milliseconds timeout =
                                                                           std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int32_t> addElementToPositionAfter(const Key &key, const KeyHint *hint = nullptr,
+    [[nodiscard]] std::future<uint32_t> addElementToPositionAfter(const Key &key, const KeyHint *hint = nullptr,
                                                                  const std::vector<ValuePtr> *data = nullptr,
                                                                  ValuePtr pivot = nullptr,
                                                                  int32_t clientId = 0,
@@ -269,7 +269,7 @@ public:
                                                          std::chrono::milliseconds timeout = std::chrono::milliseconds(
                                                              0));
 
-    [[nodiscard]] std::future<ValuePtr> getAndRemoveElementAtPosition(const Key &key, const KeyHint *hint, int32_t pos,
+    [[nodiscard]] std::future<ValuePtr> getAndRemoveElementAtPosition(const Key &key, const KeyHint *hint, uint64_t pos,
                                                                       int32_t clientId = 0,
                                                                       std::chrono::milliseconds timeout =
                                                                               std::chrono::milliseconds(0));
@@ -282,12 +282,12 @@ public:
                                                int32_t clientId = 0,
                                                std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<bool> removeElementAtPosition(const Key &key, const KeyHint *hint, int64_t pos,
-                                                            int64_t endPos, int32_t clientId = 0,
+    [[nodiscard]] std::future<bool> removeElementAtPosition(const Key &key, const KeyHint *hint, uint64_t pos,
+                                                            uint64_t endPos, int32_t clientId = 0,
                                                             std::chrono::milliseconds timeout =
                                                                     std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int32_t> removeFromContainer(const Key &key, const KeyHint *hint, ContainerType type,
+    [[nodiscard]] std::future<uint32_t> removeFromContainer(const Key &key, const KeyHint *hint, ContainerType type,
                                                            const std::vector<KeyPtr> *keys,
                                                            const std::vector<ValuePtr> *values,
                                                            int32_t clientId = 0,
@@ -393,19 +393,19 @@ public:
                                                              std::chrono::milliseconds timeout =
                                                                      std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int32_t> removeFromContainer(const Key &key, const KeyHint *hint, const Key &elementKey,
+    [[nodiscard]] std::future<uint32_t> removeFromContainer(const Key &key, const KeyHint *hint, const Key &elementKey,
                                                            int32_t clientId = 0,
                                                            std::chrono::milliseconds timeout =
                                                                    std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int32_t> addElementHashMap(const Key &key, const KeyHint *hint,
+    [[nodiscard]] std::future<uint32_t> addElementHashMap(const Key &key, const KeyHint *hint,
                                                          const std::vector<KeyPtr> *container_keys = nullptr,
                                                          const std::vector<ValuePtr> *container_values = nullptr,
                                                          int32_t clientId = 0,
                                                          std::chrono::milliseconds timeout = std::chrono::milliseconds(
                                                              0));
 
-    [[nodiscard]] std::future<int32_t> addElementOrderedMap(const Key &key, const KeyHint *hint,
+    [[nodiscard]] std::future<uint32_t> addElementOrderedMap(const Key &key, const KeyHint *hint,
                                                             const std::vector<OrderedValuePtr> *container_keys =
                                                                     nullptr,
                                                             const std::vector<ValuePtr> *container_values = nullptr,
