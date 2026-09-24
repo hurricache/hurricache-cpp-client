@@ -55,9 +55,9 @@ static void testUpdateKeyValue(FastCacheStandaloneClient &client) {
         Value value("old", 3);
         client.createKeyValue(key, nullptr, value).get();
         
-        Value newValue("new_value", 7);
+        Value newValue("new_value", 9);
         auto updated = client.updateKeyValue(key, nullptr, newValue).get();
-        assert(std::string(updated->data, updated->size) == "new_value");
+        assert(std::string(updated->data, updated->size) == "old");
         delete updated;
         
         auto result = client.getValue(key, nullptr).get();

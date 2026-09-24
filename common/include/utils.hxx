@@ -168,6 +168,14 @@ void free_content(std::vector<T> &content) {
         delete item;
     }
 }
+template<typename Key, typename Value>
+void free_content(std::vector<std::pair<Key,Value>> &content) {
+    for (auto &pair : content) {
+        delete pair.first;
+        delete pair.second;
+    }
+}
+
 
 //used to clean up data returned by functions
 template<typename Key, typename Value>

@@ -9,7 +9,7 @@ add_compile_definitions(
         ABSL_MIN_LOG_LEVEL=4
         GRPC_NO_XDS
         GRPC_ARES=0
-        NDEBUG
+        $<$<CONFIG:Release>:NDEBUG>
         GRPC_MINIMAL_LB_POLICY
         GRPC_NO_RLS
 )

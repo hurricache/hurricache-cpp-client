@@ -189,7 +189,7 @@ public:
         const Key &key, const KeyHint *hint = nullptr, int32_t clientId = 0,
         std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<std::map<OrderedKeyPtr, ValuePtr> > streamOrderedMap(
+    [[nodiscard]] std::future<std::vector<std::pair<OrderedKeyPtr, ValuePtr> > > streamOrderedMap(
         const Key &key, const KeyHint *hint = nullptr, int32_t clientId = 0,
         std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
@@ -203,7 +203,7 @@ public:
         uint64_t endWeight, bool reverse, int32_t clientId = 0,
         std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<std::map<OrderedKeyPtr, ValuePtr> > streamElementInRangeOrderedMap(
+    [[nodiscard]] std::future<std::vector<std::pair<OrderedKeyPtr, ValuePtr> > > streamElementInRangeOrderedMap(
         const Key &key, const KeyHint *hint, uint64_t startWeight,
         uint64_t endWeight, bool reverse, int32_t clientId = 0,
         std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
@@ -412,6 +412,8 @@ public:
     // =========================================================================
     void shutdown();
 
+    [[nodiscard]] bool isShutdown() const { return shutdown_called_.load(); }
+
     ~FastCacheStandaloneClient();
 
 private:
@@ -435,6 +437,13 @@ private:
         std::chrono::milliseconds timeout,
         auto grpc_method_ptr, // Pointer to gRPC stub async method
         std::function<ResultType(ResponseType &)> transformer = {}) {
+        if (isShutdown()) [[unlikely]] {
+            std::promise<ResultType> p;
+            p.set_exception(std::make_exception_ptr(
+                std::runtime_error("Client is shut down")));
+            return p.get_future();
+        }
+
         auto *call = new RpcCallData<ResponseType, ResultType>();
         call->transformer = std::move(transformer);
         std::future<ResultType> future = call->promise.get_future();

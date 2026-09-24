@@ -14,7 +14,7 @@ target_include_directories(hurricache_standalone_client PUBLIC
 )
 
 # Standalone client also references common
-target_link_libraries(hurricache_standalone_client PRIVATE
+target_link_libraries(hurricache_standalone_client PUBLIC
         hurricache_common
 )
 

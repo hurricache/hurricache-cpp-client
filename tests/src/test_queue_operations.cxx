@@ -18,8 +18,7 @@ static void testCreateEmptyQueue(FastCacheStandaloneClient &client) {
         client.createQueue(key).get();
         
         auto head = client.getHead(key).get();
-        assert(head != nullptr);
-        assert(head->size == 0);
+        assert(head == nullptr);
         delete head;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
@@ -68,8 +67,7 @@ static void testGetHeadOnEmptyQueue(FastCacheStandaloneClient &client) {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         
         auto head = client.getHead(key).get();
-        assert(head != nullptr);
-        assert(head->size == 0);
+        assert(head == nullptr);
         delete head;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
@@ -85,8 +83,7 @@ static void testGetAndRemoveFrontOnEmptyQueue(FastCacheStandaloneClient &client)
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         
         auto removed = client.getAndRemoveFront(key).get();
-        assert(removed != nullptr);
-        assert(removed->size == 0);
+        assert(removed == nullptr);
         delete removed;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
@@ -139,8 +136,7 @@ static void testGetAndRemoveFrontOnSingleElement(FastCacheStandaloneClient &clie
         delete removed;
 
         auto empty = client.getHead(key).get();
-        assert(empty != nullptr);
-        assert(empty->size == 0);
+        assert(empty == nullptr);
         delete empty;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {

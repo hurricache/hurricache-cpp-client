@@ -714,7 +714,7 @@ static void testRemoveFromContainer(FastCacheStandaloneClient &client) {
         auto hint = client.createVector(key, nullptr, &initial).get();
         free_content(initial);
         
-        Key remove_key = test_base::make_key("item1");
+        Key remove_key("item1",5);
         
         auto removed = client.removeFromContainer(key, &hint, remove_key).get();
         assert(removed == 1);

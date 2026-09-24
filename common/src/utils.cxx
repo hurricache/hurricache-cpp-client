@@ -43,19 +43,26 @@
     auto *payload = proto_value.mutable_value();
 
     if (value.size > static_cast<uint64_t>(defaultCompressionThreshold)) {
-        proto_value.mutable_compressioninfo()->set_enabled(true);
         uint32_t clen;
         char* compressed = compress(value.data, static_cast<uint32_t>(value.size), &clen);
-        proto_value.mutable_compressioninfo()->set_rawsize(value.size);
-
-        payload->set_size(clen);
-        // Pass compressed data via absl::Cord without extra copying (deleter removes temporary buffer compress via delete[])
-        payload->set_payload(absl::MakeCordFromExternal(
-            absl::string_view(compressed, static_cast<size_t>(clen)),
-            [compressed](absl::string_view) {
-                delete[] compressed;
-            }
-        ));
+        if (compressed != nullptr && clen > 0) {
+            proto_value.mutable_compressioninfo()->set_enabled(true);
+            proto_value.mutable_compressioninfo()->set_rawsize(value.size);
+            payload->set_size(clen);
+            payload->set_payload(absl::MakeCordFromExternal(
+                absl::string_view(compressed, static_cast<size_t>(clen)),
+                [compressed](absl::string_view) {
+                    delete[] compressed;
+                }
+            ));
+        } else {
+            // Compression failed, fall back to uncompressed
+            payload->set_size(static_cast<uint32_t>(value.size));
+            payload->set_payload(absl::MakeCordFromExternal(
+                absl::string_view(value.data, static_cast<size_t>(value.size)),
+                [](absl::string_view) {}
+            ));
+        }
     } else {
         payload->set_size(static_cast<uint32_t>(value.size));
         // For uncompressed data use external value buffer without copying
@@ -312,7 +319,6 @@ ValuePtr valueRequestToValue(const ::hurricache::Value &request) {
     if (request.has_compressioninfo()) {
         compressed = request.compressioninfo().enabled();
         _rawSize = request.compressioninfo().rawsize();
-        compressed = true;
     }
 
     const auto &payload = request.value().payload();
