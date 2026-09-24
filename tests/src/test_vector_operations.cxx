@@ -9,7 +9,6 @@
 #include <cassert>
 #include "test_base.hxx"
 #include "utils.hxx"
-#include "utils.hxx"
 
 static void testCreateEmptyVector(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateEmptyVector... ";
@@ -40,6 +39,7 @@ static void testCreateVectorWithInitialData(FastCacheStandaloneClient &client) {
         };
         
         auto hint = client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         assert(hint.strong_hash != 0);
         
         auto items = client.streamVector(key).get();
@@ -47,6 +47,7 @@ static void testCreateVectorWithInitialData(FastCacheStandaloneClient &client) {
         assert(std::string(items[0]->data, items[0]->size) == "v1");
         assert(std::string(items[1]->data, items[1]->size) == "v2");
         assert(std::string(items[2]->data, items[2]->size) == "v3");
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -67,6 +68,7 @@ static void testStreamVectorContents(FastCacheStandaloneClient &client) {
         };
         
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto items = client.streamVector(key).get();
         assert(items.size() == 5);
@@ -92,6 +94,7 @@ static void testGetAndRemoveFront(FastCacheStandaloneClient &client) {
             test_base::make_value("third")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto removed = client.getAndRemoveFront(key).get();
         assert(std::string(removed->data, removed->size) == "first");
@@ -101,6 +104,7 @@ static void testGetAndRemoveFront(FastCacheStandaloneClient &client) {
         assert(remaining.size() == 2);
         assert(std::string(remaining[0]->data, remaining[0]->size) == "second");
         assert(std::string(remaining[1]->data, remaining[1]->size) == "third");
+        free_content(remaining);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -114,10 +118,12 @@ static void testGetAndRemoveFrontOnSingleElement(FastCacheStandaloneClient &clie
         
         std::vector<ValuePtr> initial = {test_base::make_value("only")};
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto removed = client.getAndRemoveFront(key).get();
         assert(std::string(removed->data, removed->size) == "only");
-        
+        delete removed;
+
         auto remaining = client.streamVector(key).get();
         assert(remaining.size() == 0);
         free_content(remaining);
@@ -137,6 +143,7 @@ static void testGetHead(FastCacheStandaloneClient &client) {
             test_base::make_value("tail")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto head = client.getHead(key).get();
         assert(std::string(head->data, head->size) == "head");
@@ -145,6 +152,7 @@ static void testGetHead(FastCacheStandaloneClient &client) {
         // Vector should remain unchanged
         auto items = client.streamVector(key).get();
         assert(items.size() == 2);
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -162,6 +170,7 @@ static void testGetTail(FastCacheStandaloneClient &client) {
             test_base::make_value("last")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto tail = client.getTail(key).get();
         assert(std::string(tail->data, tail->size) == "last");
@@ -183,14 +192,17 @@ static void testGetAndRemoveTail(FastCacheStandaloneClient &client) {
             test_base::make_value("last")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto removed = client.getAndRemoveTail(key).get();
         assert(std::string(removed->data, removed->size) == "last");
+        delete removed;
         
         auto remaining = client.streamVector(key).get();
         assert(remaining.size() == 2);
         assert(std::string(remaining[0]->data, remaining[0]->size) == "first");
         assert(std::string(remaining[1]->data, remaining[1]->size) == "second");
+        free_content(remaining);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -208,15 +220,17 @@ static void testGetElementAtPosition(FastCacheStandaloneClient &client) {
             test_base::make_value("pos2")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto pos0 = client.getElementAtPosition(key, nullptr, 0).get();
-        auto pos1 = client.getElementAtPosition(key, nullptr, 1).get();
-        auto pos2 = client.getElementAtPosition(key, nullptr, 2).get();
-        
         assert(std::string(pos0->data, pos0->size) == "pos0");
         delete pos0;
+        
+        auto pos1 = client.getElementAtPosition(key, nullptr, 1).get();
         assert(std::string(pos1->data, pos1->size) == "pos1");
         delete pos1;
+        
+        auto pos2 = client.getElementAtPosition(key, nullptr, 2).get();
         assert(std::string(pos2->data, pos2->size) == "pos2");
         delete pos2;
         std::cout << "PASSED\n";
@@ -235,9 +249,11 @@ static void testGetElementAtPositionZero(FastCacheStandaloneClient &client) {
             test_base::make_value("second")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto pos0 = client.getElementAtPosition(key, nullptr, 0).get();
         assert(std::string(pos0->data, pos0->size) == "first");
+        delete pos0;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -254,9 +270,11 @@ static void testGetElementAtPositionLast(FastCacheStandaloneClient &client) {
             test_base::make_value("second")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto last = client.getElementAtPosition(key, nullptr, 1).get();
         assert(std::string(last->data, last->size) == "second");
+        delete last;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -274,14 +292,17 @@ static void testGetAndRemoveElementAtPosition(FastCacheStandaloneClient &client)
             test_base::make_value("c")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto removed = client.getAndRemoveElementAtPosition(key, nullptr, 1).get();
         assert(std::string(removed->data, removed->size) == "b");
+        delete removed;
         
         auto remaining = client.streamVector(key).get();
         assert(remaining.size() == 2);
         assert(std::string(remaining[0]->data, remaining[0]->size) == "a");
         assert(std::string(remaining[1]->data, remaining[1]->size) == "c");
+        free_content(remaining);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -298,16 +319,19 @@ static void testAddElementToTail(FastCacheStandaloneClient &client) {
             test_base::make_value("second")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         std::vector<ValuePtr> data = {test_base::make_value("third")};
         auto added = client.addElementToTail(key, nullptr, &data).get();
         assert(added == 1);
-        
+        free_content(data);
+
         auto items = client.streamVector(key).get();
         assert(items.size() == 3);
         assert(std::string(items[0]->data, items[0]->size) == "first");
         assert(std::string(items[1]->data, items[1]->size) == "second");
         assert(std::string(items[2]->data, items[2]->size) == "third");
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -324,16 +348,19 @@ static void testAddElementToHead(FastCacheStandaloneClient &client) {
             test_base::make_value("third")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         std::vector<ValuePtr> data = {test_base::make_value("first")};
         auto added = client.addElementToHead(key, nullptr, &data).get();
         assert(added == 1);
-        
+        free_content(data);
+
         auto items = client.streamVector(key).get();
         assert(items.size() == 3);
         assert(std::string(items[0]->data, items[0]->size) == "first");
         assert(std::string(items[1]->data, items[1]->size) == "second");
         assert(std::string(items[2]->data, items[2]->size) == "third");
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -350,16 +377,19 @@ static void testAddElementToPosition(FastCacheStandaloneClient &client) {
             test_base::make_value("last")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         std::vector<ValuePtr> data = {test_base::make_value("middle")};
         auto added = client.addElementToPosition(key, nullptr, &data, 1).get();
         assert(added >= 0);
-        
+        free_content(data);
+
         auto items = client.streamVector(key).get();
         assert(items.size() == 3);
         assert(std::string(items[0]->data, items[0]->size) == "first");
         assert(std::string(items[1]->data, items[1]->size) == "middle");
         assert(std::string(items[2]->data, items[2]->size) == "last");
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -376,17 +406,21 @@ static void testAddElementToPositionBefore(FastCacheStandaloneClient &client) {
             test_base::make_value("pivot")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         std::vector<ValuePtr> data = {test_base::make_value("inserted")};
         ValuePtr pivot = test_base::make_value("pivot");
         auto added = client.addElementToPositionBefore(key, nullptr, &data, pivot).get();
         assert(added >= 0);
-        
+        free_content(data);
+        delete pivot;
+
         auto items = client.streamVector(key).get();
         assert(items.size() == 3);
         assert(std::string(items[0]->data, items[0]->size) == "head");
         assert(std::string(items[1]->data, items[1]->size) == "inserted");
         assert(std::string(items[2]->data, items[2]->size) == "pivot");
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -403,17 +437,21 @@ static void testAddElementToPositionAfter(FastCacheStandaloneClient &client) {
             test_base::make_value("tail")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         std::vector<ValuePtr> data = {test_base::make_value("inserted")};
         ValuePtr pivot = test_base::make_value("head");
         auto added = client.addElementToPositionAfter(key, nullptr, &data, pivot).get();
         assert(added >= 0);
-        
+        free_content(data);
+        delete pivot;
+
         auto items = client.streamVector(key).get();
         assert(items.size() == 3);
         assert(std::string(items[0]->data, items[0]->size) == "head");
         assert(std::string(items[1]->data, items[1]->size) == "inserted");
         assert(std::string(items[2]->data, items[2]->size) == "tail");
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -431,6 +469,7 @@ static void testRemoveHead(FastCacheStandaloneClient &client) {
             test_base::make_value("third")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto removed = client.removeHead(key, nullptr).get();
         assert(removed);
@@ -439,6 +478,7 @@ static void testRemoveHead(FastCacheStandaloneClient &client) {
         assert(items.size() == 2);
         assert(std::string(items[0]->data, items[0]->size) == "second");
         assert(std::string(items[1]->data, items[1]->size) == "third");
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -456,6 +496,7 @@ static void testRemoveTail(FastCacheStandaloneClient &client) {
             test_base::make_value("third")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto removed = client.removeTail(key, nullptr).get();
         assert(removed);
@@ -464,6 +505,7 @@ static void testRemoveTail(FastCacheStandaloneClient &client) {
         assert(items.size() == 2);
         assert(std::string(items[0]->data, items[0]->size) == "first");
         assert(std::string(items[1]->data, items[1]->size) == "second");
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -481,6 +523,7 @@ static void testRemoveElementAtPosition(FastCacheStandaloneClient &client) {
             test_base::make_value("2")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto removed = client.removeElementAtPosition(key, nullptr, 1, 1).get();
         assert(removed);
@@ -489,6 +532,7 @@ static void testRemoveElementAtPosition(FastCacheStandaloneClient &client) {
         assert(items.size() == 2);
         assert(std::string(items[0]->data, items[0]->size) == "0");
         assert(std::string(items[1]->data, items[1]->size) == "2");
+        free_content(items);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -506,13 +550,14 @@ static void testGetSize(FastCacheStandaloneClient &client) {
             test_base::make_value("c")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto size = client.getSize(key).get();
         assert(size == 3);
         
         std::vector<ValuePtr> data = {test_base::make_value("d")};
         client.addElementToTail(key, nullptr, &data).get();
-        
+        free_content(data);
         size = client.getSize(key).get();
         assert(size == 4);
         std::cout << "PASSED\n";
@@ -531,6 +576,7 @@ static void testRemoveVector(FastCacheStandaloneClient &client) {
             test_base::make_value("item2")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto removed = client.remove(key).get();
         assert(removed);
@@ -556,6 +602,7 @@ static void testSetTtlAndGetTtl(FastCacheStandaloneClient &client) {
             test_base::make_value("b")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto setTtl = client.setTtl(key, nullptr, 5000).get();
         assert(setTtl);
@@ -582,12 +629,14 @@ static void testStreamElementInRangeUnordered(FastCacheStandaloneClient &client)
             test_base::make_value("5")
         };
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto range = client.streamElementInRangeUnordered(key, nullptr, ContainerType::VECTOR, 2, 4).get();
         assert(range.size() == 3);
         assert(std::string(range[0]->data, range[0]->size) == "2");
         assert(std::string(range[1]->data, range[1]->size) == "3");
         assert(std::string(range[2]->data, range[2]->size) == "4");
+        free_content(range);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -601,6 +650,7 @@ static void testWriteLockOnVector(FastCacheStandaloneClient &client) {
         
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         int32_t ownerId = 1;
         auto lockRes = client.lockObject(key, nullptr, LockType::WRITE_LOCK, ownerId).get();
@@ -609,12 +659,13 @@ static void testWriteLockOnVector(FastCacheStandaloneClient &client) {
         // Owner can read
         auto head = client.getHead(key, nullptr, ownerId).get();
         assert(head != nullptr);
-        
+        delete head;
         // Owner can write
         std::vector<ValuePtr> data = {test_base::make_value("write")};
         auto added = client.addElementToTail(key, nullptr, &data, ownerId).get();
         assert(added >= 0);
-        
+        free_content(data);
+
         // Unlock
         auto unlockRes = client.unlockObject(key, nullptr, ownerId).get();
         assert(unlockRes == LockStatus::OK);
@@ -631,6 +682,7 @@ static void testReadLockOnVector(FastCacheStandaloneClient &client) {
         
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         int32_t readerId = 2;
         auto lockRes = client.lockObject(key, nullptr, LockType::READ_LOCK, readerId).get();
@@ -639,7 +691,7 @@ static void testReadLockOnVector(FastCacheStandaloneClient &client) {
         // Reading works
         auto head = client.getHead(key).get();
         assert(head != nullptr);
-        
+        delete head;
         // Unlock
         auto unlockRes = client.unlockObject(key, nullptr, readerId).get();
         assert(unlockRes == LockStatus::OK);
@@ -660,6 +712,7 @@ static void testRemoveFromContainer(FastCacheStandaloneClient &client) {
             test_base::make_value("item3")
         };
         auto hint = client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         Key remove_key = test_base::make_key("item1");
         
@@ -668,6 +721,7 @@ static void testRemoveFromContainer(FastCacheStandaloneClient &client) {
         
         auto result = client.streamVector(key).get();
         assert(result.size() == 2);
+        free_content(result);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -684,6 +738,7 @@ static void testRemoveFromContainerNonExistent(FastCacheStandaloneClient &client
             test_base::make_value("item2")
         };
         auto hint = client.createVector(key, nullptr, &initial).get();
+        free_content(initial);
         
         Key remove_key = test_base::make_key("item123");
         

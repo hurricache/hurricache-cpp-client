@@ -103,7 +103,7 @@ struct StreamCallData : public RpcCallDataBase {
     ResponseChunkType current_chunk;
     ResultType accumulated_result;
 
-    // Добавим состояние STARTED, чтобы развести StartCall и первый Read/Finish
+    // Add STARTED state to differentiate StartCall and first Read/Finish
     enum class State { STARTED, READING, FINISHING };
     State state = State::STARTED;
 
@@ -111,7 +111,7 @@ struct StreamCallData : public RpcCallDataBase {
 
     void Proceed(bool ok) override {
         if (state == State::STARTED) {
-            // Это срабатывает после StartCall(tag)
+            // This fires after StartCall(tag)
             if (ok) {
                 state = State::READING;
                 reader->Read(&current_chunk, this);
@@ -124,10 +124,10 @@ struct StreamCallData : public RpcCallDataBase {
                 if (chunk_accumulator) {
                     chunk_accumulator(accumulated_result, current_chunk);
                 }
-                // Запрашиваем следующий чанк
+                // Request next chunk
                 reader->Read(&current_chunk, this);
             } else {
-                // Сервер закончил отправку данных (ok == false для Read означает EOF)
+                // Server finished sending data (ok == false for Read means EOF)
                 state = State::FINISHING;
                 reader->Finish(&status, this);
             }
@@ -157,7 +157,7 @@ hurricache::CreateContainerRequest buildContainerRequestOrdered(
 //used to clean up data returned by functions
 template<typename T>
 void free_content(std::vector<T> &content) {
-    for (const auto & item : content) {
+    for (auto & item : content) {
         delete item;
     }
 }
@@ -165,9 +165,9 @@ void free_content(std::vector<T> &content) {
 //used to clean up data returned by functions
 template<typename Key, typename Value>
 void free_content(std::map<Key,Value> &content) {
-    for (const auto & [key, value] : content) {
-        delete key;
-        delete value;
+    for (auto &pair : content) {
+        delete pair.first;
+        delete pair.second;
     }
 }
 

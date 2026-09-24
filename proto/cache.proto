@@ -405,7 +405,7 @@ message BatchMessage {
 }
 
 message ReplicationRequest {
-  uint64 request_id = 1; // Уникальный ID запроса для сопоставления с ответом
+  uint64 request_id = 1; // Unique request ID for matching with response
 
   oneof payload {
     BatchMessage batch_request = 2;
@@ -444,9 +444,9 @@ message ReplicationRequest {
 }
 
 message ReplicationResponse {
-  uint64 request_id = 1;      // ID запроса, на который возвращается ответ
-  BoolResponse response = 2;   // Стандартный ответ
-  string error_message = 3;    // Опциональное поле для ошибок
+  uint64 request_id = 1;      // ID of request this response is for
+  BoolResponse response = 2;   // Standard response
+  string error_message = 3;    // Optional error field
 }
 
 

@@ -21,6 +21,7 @@ static void testAddElementUnordered(FastCacheStandaloneClient &client) {
             test_base::make_value("item2")
         };
         client.createSet(key, nullptr, &initial).get();
+        free_content(initial);
         
         std::vector<ValuePtr> data = {test_base::make_value("new1")};
         auto result = client.addElementUnordered(key, nullptr, &data).get();
@@ -28,6 +29,8 @@ static void testAddElementUnordered(FastCacheStandaloneClient &client) {
         
         auto items = client.streamSet(key).get();
         assert(items.size() == 3);
+        free_content(items);
+        free_content(data);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -43,6 +46,7 @@ static void testAddElementWithWeight(FastCacheStandaloneClient &client) {
             test_base::make_ordered_value("item1", 100)
         };
         client.createOrderedSet(key, nullptr, &initial).get();
+        free_content(initial);
         
         std::vector<OrderedValuePtr> data = {
             test_base::make_ordered_value("new1", 200)
@@ -52,6 +56,8 @@ static void testAddElementWithWeight(FastCacheStandaloneClient &client) {
         
         auto items = client.streamOrderedSet(key).get();
         assert(items.size() == 2);
+        free_content(items);
+        free_content(data);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -67,6 +73,7 @@ static void testAddElementToTail(FastCacheStandaloneClient &client) {
             test_base::make_value("item1")
         };
         client.createList(key, nullptr, &initial).get();
+        free_content(initial);
         
         std::vector<ValuePtr> data = {test_base::make_value("tail1")};
         auto result = client.addElementToTail(key, nullptr, &data).get();
@@ -74,6 +81,8 @@ static void testAddElementToTail(FastCacheStandaloneClient &client) {
         
         auto items = client.streamList(key).get();
         assert(items.size() == 2);
+        free_content(items);
+        free_content(data);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -89,6 +98,7 @@ static void testAddElementToHead(FastCacheStandaloneClient &client) {
             test_base::make_value("item1")
         };
         client.createList(key, nullptr, &initial).get();
+        free_content(initial);
         
         std::vector<ValuePtr> data = {test_base::make_value("head1")};
         auto result = client.addElementToHead(key, nullptr, &data).get();
@@ -97,6 +107,8 @@ static void testAddElementToHead(FastCacheStandaloneClient &client) {
         auto items = client.streamList(key).get();
         assert(items.size() == 2);
         assert(std::string(items[0]->data, items[0]->size) == "head1");
+        free_content(items);
+        free_content(data);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -113,6 +125,7 @@ static void testRemoveElement(FastCacheStandaloneClient &client) {
             test_base::make_value("item2")
         };
         client.createList(key, nullptr, &initial).get();
+        free_content(initial);
         
         auto result = client.remove(key).get();
         assert(result);

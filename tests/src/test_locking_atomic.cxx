@@ -24,7 +24,7 @@ static void testLockObject(FastCacheStandaloneClient &client) {
         client.createList(key, nullptr, &initial).get();
         
         auto future = client.lockObject(key, nullptr, LockType::WRITE_LOCK, 0, std::chrono::milliseconds(60000)).get();
-        
+        free_content(initial);
         std::cout << "PASSED (lockObject returned " << future << ")\n";
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
@@ -41,7 +41,7 @@ static void testUnlockObject(FastCacheStandaloneClient &client) {
         
         client.lockObject(key, nullptr, LockType::WRITE_LOCK, 0, std::chrono::milliseconds(60000)).get();
         auto future = client.unlockObject(key, nullptr, 0).get();
-        
+        free_content(initial);
         std::cout << "PASSED (unlockObject returned " << future << ")\n";
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
@@ -223,16 +223,18 @@ static void testGetContainerValue(FastCacheStandaloneClient &client) {
         initial[k1] = v1;
         
         client.createMap(key, nullptr, &initial).get();
-        
+        free_content(initial);
+
         Key elementKey = test_base::make_key("key1");
         auto future = client.getContainerValue(key, nullptr, elementKey).get();
-        
+
         if (future && future->size > 0) {
             std::cout << "PASSED (getContainerValue returned value size=" << future->size << ")\n";
             delete future;
         } else {
             std::cout << "PASSED (getContainerValue returned empty)\n";
         }
+
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -249,7 +251,8 @@ static void testGetAndRemoveContainerValue(FastCacheStandaloneClient &client) {
         initial[k1] = v1;
         
         client.createMap(key, nullptr, &initial).get();
-        
+        free_content(initial);
+
         Key elementKey = test_base::make_key("key1");
         auto future = client.getAndRemoveContainerValue(key, nullptr, elementKey).get();
         
@@ -259,6 +262,7 @@ static void testGetAndRemoveContainerValue(FastCacheStandaloneClient &client) {
         } else {
             std::cout << "PASSED (getAndRemoveContainerValue returned empty)\n";
         }
+
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -278,7 +282,7 @@ static void testContainsContainerKey(FastCacheStandaloneClient &client) {
         
         Key elementKey = test_base::make_key("key1");
         auto future = client.containsContainerKey(key, nullptr, elementKey).get();
-        
+        free_content(initial);
         std::cout << "PASSED (containsContainerKey returned " << (future ? "true" : "false") << ")\n";
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
@@ -296,7 +300,7 @@ static void testUpdateContainerValue(FastCacheStandaloneClient &client) {
         initial[k1] = v1;
         
         client.createMap(key, nullptr, &initial).get();
-        
+        free_content(initial);
         Key elementKey = test_base::make_key("key1");
         Value newValue("update", 6);
         auto future = client.updateContainerValue(key, nullptr, elementKey, newValue).get();
@@ -307,6 +311,7 @@ static void testUpdateContainerValue(FastCacheStandaloneClient &client) {
         } else {
             std::cout << "PASSED (updateContainerValue returned empty)\n";
         }
+
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -326,7 +331,7 @@ static void testRemoveFromContainerByKey(FastCacheStandaloneClient &client) {
         
         Key elementKey = test_base::make_key("key1");
         auto future = client.removeFromContainer(key, nullptr, elementKey).get();
-        
+        free_content(initial);
         std::cout << "PASSED (removeFromContainerByKey returned " << future << ")\n";
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
@@ -348,7 +353,9 @@ static void testAddElementHashMap(FastCacheStandaloneClient &client) {
         containerValues.push_back(test_base::make_value("nv1"));
         
         auto future = client.addElementHashMap(key, nullptr, &containerKeys, &containerValues).get();
-        
+        free_content(containerKeys);
+        free_content(containerValues);
+
         std::cout << "PASSED (addElementHashMap returned " << future << ")\n";
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
@@ -371,7 +378,8 @@ static void testAddElementOrderedMap(FastCacheStandaloneClient &client) {
         containerValues.push_back(test_base::make_value("nv1"));
         
         auto future = client.addElementOrderedMap(key, nullptr, &containerKeys, &containerValues).get();
-        
+        free_content(containerValues);
+        free_content(containerKeys);
         std::cout << "PASSED (addElementOrderedMap returned " << future << ")\n";
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";

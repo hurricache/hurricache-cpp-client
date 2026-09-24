@@ -3,33 +3,33 @@ if(TARGET gRPC::grpc++ OR TARGET grpc++)
 endif()
 
 # -----------------------------------------------------------------------------
-# 1. Глобальные опции сборки и LTO
+# 1. Global build options and LTO
 # -----------------------------------------------------------------------------
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Force static libraries" FORCE)
 set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "Force static protobuf" FORCE)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "Force PIC" FORCE)
 
-# Включаем Interprocedural Optimization (LTO) для всех подпроектов
+# Enable Interprocedural Optimization (LTO) for all subprojects
 #set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON CACHE BOOL "Enable LTO globally" FORCE)
 #set(gRPC_ENABLE_INTERPROCEDURAL_OPTIMIZATION ON CACHE BOOL "Enable LTO for gRPC" FORCE)
 
-# Форсируем флаговые оптимизации для Release-сборки gRPC / Abseil / Protobuf
+# Force optimization flags for Release build of gRPC / Abseil / Protobuf
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native -mno-avx512f -flto=auto -fno-semantic-interposition" CACHE STRING "" FORCE)
 #set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -march=native -mno-avx512f -flto=auto -fno-semantic-interposition" CACHE STRING "" FORCE)
 
-# КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ:
-# Включаем инсталляцию/экспорт для Abseil, чтобы его таргеты были доступны для export-сета Protobuf.
-# Благодаря EXCLUDE_FROM_ALL эти файлы НЕ будут физически устанавливаться в систему.
+# CRITICAL FIX:
+# Enable installation/export for Abseil so its targets are available for Protobuf export set.
+# Thanks to EXCLUDE_FROM_ALL these files will NOT be physically installed to the system.
 set(ABSL_ENABLE_INSTALL ON CACHE BOOL "" FORCE)
 
-# Остальные библиотеки отключаем от инсталляции
+# Disable installation for other libraries
 set(gRPC_INSTALL OFF CACHE BOOL "" FORCE)
 set(protobuf_INSTALL OFF CACHE BOOL "" FORCE)
 set(UTF8_RANGE_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 set(RE2_BUILD_TESTING OFF CACHE BOOL "" FORCE)
 
 # -----------------------------------------------------------------------------
-# 2. Stripping компонентов gRPC и Protobuf
+# 2. Stripping of gRPC and Protobuf components
 # -----------------------------------------------------------------------------
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(protobuf_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -59,7 +59,7 @@ set(gRPC_BUILD_XDS_CONFIG OFF CACHE BOOL "" FORCE)
 set(gRPC_ENABLE_STATS OFF CACHE BOOL "" FORCE)
 set(gRPC_USE_SYSTEMD OFF CACHE BOOL "" FORCE)
 
-# Провайдеры зависимостей
+# Dependency providers
 set(gRPC_ABSL_PROVIDER "module" CACHE STRING "" FORCE)
 set(gRPC_PROTOBUF_PROVIDER "module" CACHE STRING "" FORCE)
 set(gRPC_RE2_PROVIDER "module" CACHE STRING "" FORCE)
@@ -68,7 +68,7 @@ set(gRPC_ZLIB_PROVIDER "module" CACHE STRING "" FORCE)
 set(gRPC_CARES_PROVIDER "none" CACHE STRING "" FORCE)
 set(gRPC_BENCHMARK_PROVIDER "none" CACHE STRING "" FORCE)
 set(gRPC_USE_SYSTEM_ATOMICS ON CACHE BOOL "" FORCE)
-# Отключаем тесты и бенчмарки Abseil
+# Disable Abseil tests and benchmarks
 set(ABSL_BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(ABSL_ENABLE_EXCEPTIONS OFF CACHE BOOL "" FORCE)
 
@@ -93,7 +93,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 # -----------------------------------------------------------------------------
-# 3. Подключение сабмодуля gRPC
+# 3. Include gRPC submodule
 # -----------------------------------------------------------------------------
 set(GRPC_SUBMODULE_DIR "${CMAKE_SOURCE_DIR}/third_party/grpc")
 
@@ -104,7 +104,7 @@ endif()
 add_subdirectory("${GRPC_SUBMODULE_DIR}" "${CMAKE_BINARY_DIR}/third_party/grpc" EXCLUDE_FROM_ALL)
 
 # -----------------------------------------------------------------------------
-# 4. Видимость символов и форсирование LTO для таргетов
+# 4. Symbol visibility and forced LTO for targets
 # -----------------------------------------------------------------------------
 set(GRPC_TARGETS_TO_OPTIMIZE
         grpc

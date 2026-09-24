@@ -29,7 +29,7 @@ struct Key {
 
     Key(const char *src_data, uint32_t src_size);
 
-    ~Key();
+    virtual ~Key();
     Key(const Key &) = delete;
     Key& operator=(const Key &) = delete;
 
@@ -61,7 +61,7 @@ struct Value {
 
     Value(Value &&other) noexcept;
 
-    ~Value();
+    virtual ~Value();
     Value(const Value &) = delete;
     Value& operator=(const Value &) = delete;
 

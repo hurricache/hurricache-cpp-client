@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(hurricache_smart CXX)
 include(../grpc-setup.cmake)
 
-# Путь к proto-файлу координатора
+# Path to coordinator proto file
 set(COORD_PROTO_FILE "${CMAKE_SOURCE_DIR}/proto/coordinator.proto")
 set(COORD_GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated_coord")
 file(MAKE_DIRECTORY "${COORD_GEN_DIR}")
@@ -14,7 +14,7 @@ set(COORD_PROTO_SRCS
         "${COORD_GEN_DIR}/coordinator.grpc.pb.h"
 )
 
-# Генерация файлов из coordinator.proto
+# Generate files from coordinator.proto
 add_custom_command(
         OUTPUT ${COORD_PROTO_SRCS}
         COMMAND protobuf::protoc
@@ -28,10 +28,10 @@ add_custom_command(
         COMMENT "Running gRPC C++ compiler on coordinator.proto"
 )
 
-# Собираем смарт-клиент
+# Build smart client
 add_library(hurricache_smart_client STATIC
         src/smart_client.cpp
-        # Другие исходники смарт-клиента (например, логика роутинга через координатор)
+        # Other smart client sources (e.g., routing logic via coordinator)
         ${COORD_PROTO_SRCS}
 )
 
@@ -43,7 +43,7 @@ target_include_directories(hurricache_smart_client PUBLIC
         "${COORD_GEN_DIR}"
 )
 
-# Смарт-клиент использует и общий хурикэш (cache.proto), и свой координатор
+# Smart client uses both common hurricache (cache.proto) and its own coordinator
 target_link_libraries(hurricache_smart_client PUBLIC
         hurricache_common
         gRPC::grpc++

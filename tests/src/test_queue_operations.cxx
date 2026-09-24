@@ -20,6 +20,7 @@ static void testCreateEmptyQueue(FastCacheStandaloneClient &client) {
         auto head = client.getHead(key).get();
         assert(head != nullptr);
         assert(head->size == 0);
+        delete head;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -38,6 +39,7 @@ static void testCreateQueueWithInitialData(FastCacheStandaloneClient &client) {
         };
         
         auto hint = client.createQueue(key, nullptr, &initial).get();
+        free_content(initial);
         assert(hint.strong_hash != 0);
         
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -47,8 +49,11 @@ static void testCreateQueueWithInitialData(FastCacheStandaloneClient &client) {
         auto r3 = client.getAndRemoveFront(key).get();
         
         assert(std::string(r1->data, r1->size) == "first");
+        delete r1;
         assert(std::string(r2->data, r2->size) == "second");
+        delete r2;
         assert(std::string(r3->data, r3->size) == "third");
+        delete r3;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -65,6 +70,7 @@ static void testGetHeadOnEmptyQueue(FastCacheStandaloneClient &client) {
         auto head = client.getHead(key).get();
         assert(head != nullptr);
         assert(head->size == 0);
+        delete head;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -81,6 +87,7 @@ static void testGetAndRemoveFrontOnEmptyQueue(FastCacheStandaloneClient &client)
         auto removed = client.getAndRemoveFront(key).get();
         assert(removed != nullptr);
         assert(removed->size == 0);
+        delete removed;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -98,6 +105,7 @@ static void testGetAndRemoveFront(FastCacheStandaloneClient &client) {
             test_base::make_value("third")
         };
         client.createQueue(key, nullptr, &initial).get();
+        free_content(initial);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         
         auto r1 = client.getAndRemoveFront(key).get();
@@ -105,8 +113,11 @@ static void testGetAndRemoveFront(FastCacheStandaloneClient &client) {
         auto r3 = client.getAndRemoveFront(key).get();
         
         assert(std::string(r1->data, r1->size) == "first");
+        delete r1;
         assert(std::string(r2->data, r2->size) == "second");
+        delete r2;
         assert(std::string(r3->data, r3->size) == "third");
+        delete r3;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -117,17 +128,20 @@ static void testGetAndRemoveFrontOnSingleElement(FastCacheStandaloneClient &clie
     std::cout << "  testGetAndRemoveFrontOnSingleElement... ";
     try {
         Key key = test_base::make_key("singleElementQueue");
-        
+
         std::vector<ValuePtr> initial = {test_base::make_value("only")};
         client.createQueue(key, nullptr, &initial).get();
+        free_content(initial);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        
+
         auto removed = client.getAndRemoveFront(key).get();
         assert(std::string(removed->data, removed->size) == "only");
-        
+        delete removed;
+
         auto empty = client.getHead(key).get();
         assert(empty != nullptr);
         assert(empty->size == 0);
+        delete empty;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -138,19 +152,22 @@ static void testGetFrontAndHead(FastCacheStandaloneClient &client) {
     std::cout << "  testGetFrontAndHead... ";
     try {
         Key key = test_base::make_key("getFrontHead");
-        
+
         std::vector<ValuePtr> initial = {
             test_base::make_value("first"),
             test_base::make_value("second")
         };
         client.createQueue(key, nullptr, &initial).get();
+        free_content(initial);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        
+
         auto head = client.getHead(key).get();
         assert(std::string(head->data, head->size) == "first");
-        
+
         auto stillThere = client.getAndRemoveFront(key).get();
         assert(std::string(stillThere->data, stillThere->size) == "first");
+        delete head;
+        delete stillThere;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -161,20 +178,23 @@ static void testGetTail(FastCacheStandaloneClient &client) {
     std::cout << "  testGetTail... ";
     try {
         Key key = test_base::make_key("getTail");
-        
+
         std::vector<ValuePtr> initial = {
             test_base::make_value("first"),
             test_base::make_value("second"),
             test_base::make_value("third")
         };
         client.createQueue(key, nullptr, &initial).get();
+        free_content(initial);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        
+
         auto tail = client.getTail(key).get();
         assert(std::string(tail->data, tail->size) == "third");
-        
+        delete tail;
+
         auto front = client.getAndRemoveFront(key).get();
         assert(std::string(front->data, front->size) == "first");
+        delete front;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -185,16 +205,19 @@ static void testGetTailOnSingleElementQueue(FastCacheStandaloneClient &client) {
     std::cout << "  testGetTailOnSingleElementQueue... ";
     try {
         Key key = test_base::make_key("singleElementTail");
-        
+
         std::vector<ValuePtr> initial = {test_base::make_value("only")};
         client.createQueue(key, nullptr, &initial).get();
+        free_content(initial);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        
+
         auto head = client.getHead(key).get();
         auto tail = client.getTail(key).get();
-        
+
         assert(std::string(head->data, head->size) == "only");
         assert(std::string(tail->data, tail->size) == "only");
+        delete head;
+        delete tail;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -212,16 +235,20 @@ static void testGetAndRemoveTail(FastCacheStandaloneClient &client) {
             test_base::make_value("third")
         };
         client.createQueue(key, nullptr, &initial).get();
+        free_content(initial);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         
         auto removed = client.getAndRemoveTail(key, nullptr).get();
         assert(std::string(removed->data, removed->size) == "third");
+        delete removed;
         
         auto f1 = client.getAndRemoveFront(key).get();
         auto f2 = client.getAndRemoveFront(key).get();
         
         assert(std::string(f1->data, f1->size) == "first");
+        delete f1;
         assert(std::string(f2->data, f2->size) == "second");
+        delete f2;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -238,10 +265,12 @@ static void testAddElementToTail(FastCacheStandaloneClient &client) {
             test_base::make_value("second")
         };
         client.createQueue(key, nullptr, &initial).get();
+        free_content(initial);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         
         std::vector<ValuePtr> data = {test_base::make_value("third")};
         auto added = client.addElementToTail(key, nullptr, &data).get();
+        free_content(data);
         assert(added == 1);
         
         auto f1 = client.getAndRemoveFront(key).get();
@@ -249,8 +278,11 @@ static void testAddElementToTail(FastCacheStandaloneClient &client) {
         auto f3 = client.getAndRemoveFront(key).get();
         
         assert(std::string(f1->data, f1->size) == "first");
+        delete f1;
         assert(std::string(f2->data, f2->size) == "second");
+        delete f2;
         assert(std::string(f3->data, f3->size) == "third");
+        delete f3;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -267,10 +299,12 @@ static void testAddElementToHead(FastCacheStandaloneClient &client) {
             test_base::make_value("third")
         };
         client.createQueue(key, nullptr, &initial).get();
+        free_content(initial);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         
         std::vector<ValuePtr> data = {test_base::make_value("first")};
         auto added = client.addElementToHead(key, nullptr, &data).get();
+        free_content(data);
         assert(added == 1);
         
         auto f1 = client.getAndRemoveFront(key).get();
@@ -278,8 +312,11 @@ static void testAddElementToHead(FastCacheStandaloneClient &client) {
         auto f3 = client.getAndRemoveFront(key).get();
         
         assert(std::string(f1->data, f1->size) == "first");
+        delete f1;
         assert(std::string(f2->data, f2->size) == "second");
+        delete f2;
         assert(std::string(f3->data, f3->size) == "third");
+        delete f3;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -297,6 +334,7 @@ static void testRemoveHead(FastCacheStandaloneClient &client) {
             test_base::make_value("third")
         };
         client.createQueue(key, nullptr, &initial).get();
+        free_content(initial);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         
         auto removed = client.removeHead(key, nullptr).get();
@@ -306,7 +344,9 @@ static void testRemoveHead(FastCacheStandaloneClient &client) {
         auto f2 = client.getAndRemoveFront(key).get();
         
         assert(std::string(f1->data, f1->size) == "second");
+        delete f1;
         assert(std::string(f2->data, f2->size) == "third");
+        delete f2;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -324,6 +364,7 @@ static void testRemoveTail(FastCacheStandaloneClient &client) {
             test_base::make_value("third")
         };
         client.createQueue(key, nullptr, &initial).get();
+        free_content(initial);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         
         auto removed = client.removeTail(key, nullptr).get();
@@ -333,7 +374,9 @@ static void testRemoveTail(FastCacheStandaloneClient &client) {
         auto f2 = client.getAndRemoveFront(key).get();
         
         assert(std::string(f1->data, f1->size) == "first");
+        delete f1;
         assert(std::string(f2->data, f2->size) == "second");
+        delete f2;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -350,6 +393,7 @@ static void testGetSizeReturnsZero(FastCacheStandaloneClient &client) {
             test_base::make_value("second")
         };
         client.createQueue(key, nullptr, &initial).get();
+        free_content(initial);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         
         auto size = client.getSize(key, nullptr).get();
@@ -367,6 +411,7 @@ static void testRemoveQueue(FastCacheStandaloneClient &client) {
         
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createQueue(key, nullptr, &initial).get();
+        free_content(initial);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         
         auto removed = client.remove(key).get();
@@ -390,6 +435,7 @@ static void testSetTtlAndGetTtlOnQueue(FastCacheStandaloneClient &client) {
         
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createQueue(key, nullptr, &initial).get();
+        free_content(initial);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         
         auto setTtl = client.setTtl(key, nullptr, 5000).get();
@@ -410,6 +456,7 @@ static void testWriteLockOnQueue(FastCacheStandaloneClient &client) {
         
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createQueue(key, nullptr, &initial).get();
+        free_content(initial);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         
         auto lockRes = client.lockObject(key, nullptr, LockType::WRITE_LOCK, 5).get();
@@ -430,6 +477,7 @@ static void testReadLockOnQueue(FastCacheStandaloneClient &client) {
         
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createQueue(key, nullptr, &initial).get();
+        free_content(initial);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         
         auto lockRes = client.lockObject(key, nullptr, LockType::READ_LOCK).get();

@@ -20,6 +20,7 @@ static void testStreamList(FastCacheStandaloneClient &client) {
         auto result = future.get();
         
         std::cout << "PASSED (streamList returned " << result.size() << " elements)\n";
+        free_content(result);
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -34,6 +35,7 @@ static void testStreamVector(FastCacheStandaloneClient &client) {
         auto result = future.get();
         
         std::cout << "PASSED (streamVector returned " << result.size() << " elements)\n";
+        free_content(result);
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -48,6 +50,7 @@ static void testStreamSet(FastCacheStandaloneClient &client) {
         auto result = future.get();
         
         std::cout << "PASSED (streamSet returned " << result.size() << " elements)\n";
+        free_content(result);
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -62,6 +65,7 @@ static void testStreamMap(FastCacheStandaloneClient &client) {
         auto result = future.get();
         
         std::cout << "PASSED (streamMap returned " << result.size() << " elements)\n";
+        free_content(result);
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -76,6 +80,7 @@ static void testStreamOrderedSet(FastCacheStandaloneClient &client) {
         auto result = future.get();
         
         std::cout << "PASSED (streamOrderedSet returned " << result.size() << " elements)\n";
+        free_content(result);
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -90,6 +95,7 @@ static void testStreamOrderedMap(FastCacheStandaloneClient &client) {
         auto result = future.get();
         
         std::cout << "PASSED (streamOrderedMap returned " << result.size() << " elements)\n";
+        free_content(result);
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -104,6 +110,7 @@ static void testStreamElementInRangeUnordered(FastCacheStandaloneClient &client)
         auto result = future.get();
         
         std::cout << "PASSED (streamElementInRangeUnordered returned " << result.size() << " elements)\n";
+        free_content(result);
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -118,6 +125,7 @@ static void testStreamElementInRangeOrderedSet(FastCacheStandaloneClient &client
         auto result = future.get();
         
         std::cout << "PASSED (streamElementInRangeOrderedSet returned " << result.size() << " elements)\n";
+        free_content(result);
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -132,6 +140,7 @@ static void testStreamElementInRangeOrderedMap(FastCacheStandaloneClient &client
         auto result = future.get();
         
         std::cout << "PASSED (streamElementInRangeOrderedMap returned " << result.size() << " elements)\n";
+        free_content(result);
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }

@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 project(hurricache_standalone CXX)
 
 add_library(hurricache_standalone_client STATIC
-        src/standalone_client.cpp  # Замените на ваши реальные файлы
-        # ... другие исходники standalone-клиента
+        src/standalone_client.cpp  # Replace with your actual source files
+        # ... other standalone client sources
 )
 
 target_compile_features(hurricache_standalone_client PUBLIC cxx_std_23)
@@ -13,7 +13,7 @@ target_include_directories(hurricache_standalone_client PUBLIC
         $<INSTALL_INTERFACE:include>
 )
 
-# Стэндэлон-клиент также ссылается на common
+# Standalone client also references common
 target_link_libraries(hurricache_standalone_client PRIVATE
         hurricache_common
 )

@@ -14,10 +14,10 @@ add_compile_definitions(
         GRPC_NO_RLS
 )
 add_compile_options(
-        -march=native
+        -msse4.2
 )
 
-# Порядок имеет значение: сначала common, так как он нужен остальным
+# Order matters: first common, as it is needed by others
 add_subdirectory(common)
 add_subdirectory(smart)
 add_subdirectory(standalone)

@@ -11,12 +11,12 @@
 #include "types.hxx"
 #include "utils.hxx"
 
-// Предполагаемые типы/структуры (из контекста проекта)
+// Expected types/structures (from project context)
 
 
 class FastCacheStandaloneClient {
 public:
-    // Конструкторы
+    // Constructors
     FastCacheStandaloneClient(const std::string &host, int32_t port, int32_t defaultClientId,
                               std::chrono::milliseconds timeout, int32_t defaultCompressionThreshold = 1024);
 
@@ -34,7 +34,7 @@ public:
                               std::chrono::milliseconds duration, int32_t defaultCompressionThreshold = 1024);
 
 
-    // Геттеры и метаинформация
+    // Getters and metadata
     [[nodiscard]] std::string toString() const;
 
     [[nodiscard]] std::string getTarget() const;
@@ -418,8 +418,10 @@ public:
     // =========================================================================
     void shutdown();
 
+    ~FastCacheStandaloneClient();
+
 private:
-    // Поля класса
+    // Class members
     std::unique_ptr<hurricache::HurriCacheGrpcService::Stub> asyncStub_;
     std::shared_ptr<grpc::Channel> channel_;
     int32_t defaultClientId_;
@@ -428,16 +430,16 @@ private:
     std::string target_;
     grpc::CompletionQueue cq_;
     std::jthread completion_queue_thread_;
-
+    std::atomic<bool> shutdown_called_{false};
     void RunCompletionQueue();
 
-    static constexpr int32_t kDefaultCompressionThreshold = 64 * 1024; // 64KB по умолчанию
+    static constexpr int32_t kDefaultCompressionThreshold = 64 * 1024; // 64KB default
 
     template<typename RequestType, typename ResponseType, typename ResultType>
     std::future<ResultType> SendAsyncRequest(
         const RequestType &request,
         std::chrono::milliseconds timeout,
-        auto grpc_method_ptr, // Указатель на асинхронный метод стаба gRPC
+        auto grpc_method_ptr, // Pointer to gRPC stub async method
         std::function<ResultType(ResponseType &)> transformer = {}) {
         auto *call = new RpcCallData<ResponseType, ResultType>();
         call->transformer = std::move(transformer);
@@ -447,7 +449,7 @@ private:
             call->context.set_deadline(std::chrono::system_clock::now() + effectiveTimeout);
         }
 
-        // Вызов переданного метода стаба через gRPC (используем Member Pointer)
+        // Call passed stub method via gRPC (using Member Pointer)
         auto reader = (asyncStub_.get()->*grpc_method_ptr)(&call->context, request, &cq_);
         reader->StartCall();
         reader->Finish(&call->response, &call->status, call);
@@ -459,13 +461,13 @@ private:
     std::future<ResultType> SendAsyncStreamRequest(
         const RequestType &request,
         std::chrono::milliseconds timeout,
-        auto grpc_method_ptr, // Указатель на метод PrepareAsync... для стрима
+        auto grpc_method_ptr, // Pointer to PrepareAsync... method for stream
         std::function<void(ResultType &, ResponseChunkType &)> accumulator) {
         auto *call = new StreamCallData<ResponseChunkType, ResultType>();
         call->chunk_accumulator = std::move(accumulator);
         std::future<ResultType> future = call->promise.get_future();
 
-        // Настройка таймаута
+        // Configure timeout
         std::chrono::milliseconds effectiveTimeout = (timeout.count() > 0) ? timeout : defaultTimeout_;
         if (effectiveTimeout.count() > 0) {
             call->context.set_deadline(std::chrono::system_clock::now() + effectiveTimeout);
@@ -476,4 +478,5 @@ private:
 
         return future;
     }
+
 };

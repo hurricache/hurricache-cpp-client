@@ -25,11 +25,14 @@
         payload->mutable_payload()->assign(key.data,key.size);
     }
 
-
-    if (hint != nullptr) {
+    auto effective_hint = hint == nullptr ? calculateKeyHint(key) : hint;
+    if (effective_hint != nullptr) {
         auto *key_hint = proto_key.mutable_keyhint();
-        key_hint->set_week_hash(hint->weak_hash);
-        key_hint->set_strong_hash(hint->strong_hash);
+        key_hint->set_week_hash(effective_hint->weak_hash);
+        key_hint->set_strong_hash(effective_hint->strong_hash);
+    }
+    if (hint == nullptr) {
+        delete effective_hint;
     }
     proto_key.set_clientid(clientId);
     return proto_key;
@@ -46,7 +49,7 @@
         proto_value.mutable_compressioninfo()->set_rawsize(value.size);
 
         payload->set_size(clen);
-        // Передаем сжатые данные через absl::Cord без лишнего копирования (делитер удаляет временный буфер compress через delete[])
+        // Pass compressed data via absl::Cord without extra copying (deleter removes temporary buffer compress via delete[])
         payload->set_payload(absl::MakeCordFromExternal(
             absl::string_view(compressed, static_cast<size_t>(clen)),
             [compressed](absl::string_view) {
@@ -55,11 +58,11 @@
         ));
     } else {
         payload->set_size(static_cast<uint32_t>(value.size));
-        // Для несжатых данных используем внешний буфер value без копирования
+        // For uncompressed data use external value buffer without copying
         payload->set_payload(absl::MakeCordFromExternal(
             absl::string_view(value.data, static_cast<size_t>(value.size)),
             [](absl::string_view) {
-                // value владеет памятью сам, освобождать здесь ничего не нужно
+                // value owns memory itself, no need to free here
             }
         ));
     }
@@ -79,7 +82,11 @@
 
 ::hurricache::GetRequest buildGetRequestProto(const Key &key, const KeyHint *hint, int32_t clientId,int32_t defaultCompressionThreshold) {
     ::hurricache::GetRequest request;
-    *request.mutable_key() = buildKeyProto(key, hint, clientId,defaultCompressionThreshold);
+    auto effective_hint = hint == nullptr ? calculateKeyHint(key) : hint;
+    *request.mutable_key() = buildKeyProto(key, effective_hint, clientId,defaultCompressionThreshold);
+    if (hint == nullptr) {
+        delete effective_hint;
+    }
     return request;
 }
 
@@ -101,7 +108,11 @@
 ::hurricache::ContainerGetRequest buildContainerGetRequestProto(const Key &key, const KeyHint *hint, int32_t clientId,
                                                                 const Key &elementKey) {
     hurricache::ContainerGetRequest request;
-    *request.mutable_key() = buildKeyProto(key, hint, clientId);
+    auto effective_hint = hint == nullptr ? calculateKeyHint(key) : hint;
+    *request.mutable_key() = buildKeyProto(key, effective_hint, clientId);
+    if (hint == nullptr) {
+        delete effective_hint;
+    }
     auto *ek = request.mutable_element_key();
     ek->mutable_payload()->set_size(elementKey.size);
     ek->mutable_payload()->mutable_payload()->assign(elementKey.data, elementKey.size);
@@ -111,7 +122,11 @@
 ::hurricache::KeyPositionRequest buildPositionRequestProto(const Key &key, const KeyHint *hint, int32_t clientId,
                                                            int32_t pos) {
     hurricache::KeyPositionRequest request;
-    *request.mutable_key() = buildKeyProto(key, hint, clientId);
+    auto effective_hint = hint == nullptr ? calculateKeyHint(key) : hint;
+    *request.mutable_key() = buildKeyProto(key, effective_hint, clientId);
+    if (hint == nullptr) {
+        delete effective_hint;
+    }
     request.set_pos(static_cast<uint64_t>(pos));
     return request;
 }
@@ -213,7 +228,7 @@ OrderedValuePtr valueRequestToOrderedValue(const ::hurricache::OrderedValue &req
     char *buff = nullptr;
     bool success = false;
 
-    // Проверяем, является ли Cord плоским (flat / состоит ровно из одного чанка нужного размера)
+    // Check if Cord is flat (consists of exactly one chunk of the required size)
     auto chunks = payload.Chunks();
     auto it = chunks.begin();
     bool is_flat = false;
@@ -379,9 +394,12 @@ hurricache::CreateContainerRequest buildContainerRequest(
     int32_t defaultCompressionThreshold) {
     hurricache::CreateContainerRequest request;
 
-    // Вычисляем effective_hint по аналогии с упорядоченным контейнером
+    // Calculate effective_hint similar to ordered container
     auto effective_hint = hint == nullptr ? calculateKeyHint(key) : hint;
     *request.mutable_key() = buildKeyProto(key, effective_hint, clientId, defaultCompressionThreshold);
+    if (hint == nullptr) {
+        delete effective_hint;
+    }
     request.set_type(type);
 
     if (ttl.count() > 0) {
@@ -393,8 +411,8 @@ hurricache::CreateContainerRequest buildContainerRequest(
     if (values != nullptr) {
         for (const auto &v: *values) {
             if (v != nullptr) {
-                // Используем buildValueProto с поддержкой компрессии и порога
-                // (передаем нулевой ttl для элементов контейнера, если время жизни задается на уровне контейнера)
+                // Use buildValueProto with compression and threshold support
+                // (pass zero ttl for container elements if lifetime is set at container level)
                 *request.add_value_unordered() = buildValueProto(*v, std::chrono::milliseconds(0), clientId,defaultCompressionThreshold);
             }
         }
@@ -411,6 +429,9 @@ hurricache::CreateContainerRequest buildContainerRequestOrdered(
     auto effective_hint = hint == nullptr ? calculateKeyHint(key) : hint;
     *request.mutable_key() = buildKeyProto(key, effective_hint, clientId, defaultCompressionThreshold);
     request.set_type(type);
+    if (hint == nullptr) {
+        delete effective_hint;
+    }
 
     if (ttl.count() > 0) {
         auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -442,7 +463,7 @@ hurricache::CreateContainerRequest buildContainerRequestOrdered(
                 ov_val->set_payload(absl::MakeCordFromExternal(
                     absl::string_view(val->data, static_cast<size_t>(val->size)),
                     [](absl::string_view) {
-                        // val владеет памятью сам
+                        // val owns memory itself
                     }
                 ));
             }

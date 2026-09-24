@@ -23,6 +23,7 @@ static void testCreateKeyValue(FastCacheStandaloneClient &client) {
         
         auto result = client.getValue(key, nullptr).get();
         assert(std::string(result->data, result->size) == "hello");
+        delete result;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -39,6 +40,7 @@ static void testGetValue(FastCacheStandaloneClient &client) {
         
         auto result = client.getValue(key, nullptr).get();
         assert(std::string(result->data, result->size) == "world");
+        delete result;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -56,9 +58,11 @@ static void testUpdateKeyValue(FastCacheStandaloneClient &client) {
         Value newValue("new_value", 7);
         auto updated = client.updateKeyValue(key, nullptr, newValue).get();
         assert(std::string(updated->data, updated->size) == "new_value");
+        delete updated;
         
         auto result = client.getValue(key, nullptr).get();
         assert(std::string(result->data, result->size) == "new_value");
+        delete result;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -123,6 +127,7 @@ static void testGetAndDeleteValue(FastCacheStandaloneClient &client) {
         
         auto deleted = client.getAndDeleteValue(key).get();
         assert(std::string(deleted->data, deleted->size) == "delete_me");
+        delete deleted;
         
         auto exists = client.existKey(key).get();
         assert(!exists);

@@ -24,11 +24,12 @@ static void testCreateQueue(FastCacheStandaloneClient &client) {
         
         auto hint = client.createQueue(key, nullptr, &initial).get();
         assert(hint.strong_hash != 0);
-        
+        free_content(initial);
         // Verify by streaming
         auto items = client.streamVector(key).get();
         assert(items.size() == 2);
         free_content(items);
+
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -51,6 +52,7 @@ static void testCreateList(FastCacheStandaloneClient &client) {
         auto items = client.streamList(key).get();
         assert(items.size() == 2);
         free_content(items);
+        free_content(initial);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -73,6 +75,7 @@ static void testCreateVector(FastCacheStandaloneClient &client) {
         auto items = client.streamVector(key).get();
         assert(items.size() == 2);
         free_content(items);
+        free_content(initial);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -95,6 +98,7 @@ static void testCreateSet(FastCacheStandaloneClient &client) {
         auto items = client.streamSet(key).get();
         assert(items.size() == 2);
         free_content(items);
+        free_content(initial);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -117,6 +121,7 @@ static void testCreateOrderedSet(FastCacheStandaloneClient &client) {
         auto items = client.streamOrderedSet(key).get();
         assert(items.size() == 2);
         free_content(items);
+        free_content(initial);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -140,6 +145,7 @@ static void testCreateMap(FastCacheStandaloneClient &client) {
         auto items = client.streamMap(key).get();
         assert(items.size() == 2);
         free_content(items);
+        free_content(initial);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";

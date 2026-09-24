@@ -8,12 +8,12 @@
 
 #include "types.hxx"
 
-// Предполагаемые типы/структуры (из контекста проекта)
+// Expected types/structures (from project context)
 
 
 class FastCacheSmartClient {
 public:
-    // Конструкторы
+    // Constructors
     FastCacheSmartClient(const std::string& host, int32_t port, int32_t defaultClientId,
                                std::chrono::milliseconds timeout, int32_t defaultCompressionThreshold);
     FastCacheSmartClient(const std::string& host, int32_t port, int32_t defaultClientId, std::chrono::milliseconds timeout);
@@ -21,7 +21,7 @@ public:
     FastCacheSmartClient(const std::string& host, int32_t port);
     FastCacheSmartClient(const std::string& host, int32_t port, std::chrono::milliseconds duration);
 
-    // Геттеры и метаинформация
+    // Getters and metadata
     [[nodiscard]] std::string toString() const;
     [[nodiscard]] std::string getTarget() const;
     [[nodiscard]] int32_t getDefaultClientId() const;

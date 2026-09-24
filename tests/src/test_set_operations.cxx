@@ -38,6 +38,7 @@ static void testCreateSetWithInitialData(FastCacheStandaloneClient &client) {
         };
         
         auto hint = client.createSet(key, nullptr, &initial).get();
+        free_content(initial);
         assert(hint.strong_hash != 0);
         
         auto items = client.streamSet(key).get();
@@ -63,7 +64,8 @@ static void testStreamSetContents(FastCacheStandaloneClient &client) {
         };
         
         client.createSet(key, nullptr, &initial).get();
-        
+        free_content(initial);
+
         auto items = client.streamSet(key).get();
         assert(items.size() == 5);
         free_content(items);
@@ -83,13 +85,16 @@ static void testAddElementUnordered(FastCacheStandaloneClient &client) {
             test_base::make_value("b")
         };
         client.createSet(key, nullptr, &initial).get();
-        
+        free_content(initial);
+
         std::vector<ValuePtr> data = {test_base::make_value("c"), test_base::make_value("d")};
         auto added = client.addElementUnordered(key, nullptr, &data).get();
         assert(added == 2);
         
         auto items = client.streamSet(key).get();
         assert(items.size() == 4);
+        free_content(items);
+        free_content(data);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
         std::cout << "FAILED: " << e.what() << "\n";
@@ -107,7 +112,8 @@ static void testGetSize(FastCacheStandaloneClient &client) {
             test_base::make_value("c")
         };
         client.createSet(key, nullptr, &initial).get();
-        
+        free_content(initial);
+
         auto size = client.getSize(key, nullptr).get();
         assert(size == 3);
         std::cout << "PASSED\n";
@@ -126,7 +132,8 @@ static void testRemoveSet(FastCacheStandaloneClient &client) {
             test_base::make_value("item2")
         };
         client.createSet(key, nullptr, &initial).get();
-        
+        free_content(initial);
+
         auto removed = client.remove(key, nullptr).get();
         assert(removed);
         
@@ -151,7 +158,8 @@ static void testSetTtlAndGetTtl(FastCacheStandaloneClient &client) {
             test_base::make_value("b")
         };
         client.createSet(key, nullptr, &initial).get();
-        
+        free_content(initial);
+
         auto setTtl = client.setTtl(key, nullptr, 5000).get();
         assert(setTtl);
         
@@ -170,7 +178,8 @@ static void testWriteLockOnSet(FastCacheStandaloneClient &client) {
         
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createSet(key, nullptr, &initial).get();
-        
+        free_content(initial);
+
         auto lockRes = client.lockObject(key, nullptr, LockType::WRITE_LOCK, 1).get();
         assert(lockRes == OK);
         
@@ -189,7 +198,8 @@ static void testReadLockOnSet(FastCacheStandaloneClient &client) {
         
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createSet(key, nullptr, &initial).get();
-        
+        free_content(initial);
+
         auto lockRes = client.lockObject(key, nullptr, LockType::READ_LOCK).get();
         assert(lockRes == OK);
         

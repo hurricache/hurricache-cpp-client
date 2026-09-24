@@ -140,7 +140,7 @@ __attribute__((always_inline)) uint64_t crc32_accumulate(const char* data, size_
     const char* sample = data;
     size_t tail = size;
 
-    // Читаем по 8 байт
+    // Read 8 bytes at a time
     while (tail >= 8) {
         uint64_t val;
         std::memcpy(&val, sample, sizeof(val));
@@ -149,7 +149,7 @@ __attribute__((always_inline)) uint64_t crc32_accumulate(const char* data, size_
         tail -= 8;
     }
 
-    // Хвосты
+    // Tail
     if (tail >= 4) {
         uint32_t val;
         std::memcpy(&val, sample, sizeof(val));

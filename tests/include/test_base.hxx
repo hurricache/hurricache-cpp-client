@@ -19,14 +19,12 @@ namespace test_base {
     // Helper to create Key from string (with unique suffix to avoid conflicts)
     static Key make_key(const std::string &str) {
         std::string unique_key = str + "_" + make_unique_suffix();
-        auto size = static_cast<uint32_t>(unique_key.size());
-        auto data = const_cast<char *>(unique_key.c_str());
-        return Key(size, data);
+        return Key(unique_key.length(), const_cast<char *>(unique_key.c_str()));
     }
 
     // Helper to create Value from string
     static ValuePtr make_value(const std::string &str) {
-        return new Value(const_cast<char *>(str.c_str()), static_cast<uint64_t>(str.size()));
+        return new Value(const_cast<char *>(str.c_str()), static_cast<uint64_t>(str.length()));
     }
 
     // Helper to create KeyHint
@@ -45,29 +43,16 @@ namespace test_base {
     // Note: copies the string data to avoid dangling pointers
     static OrderedValuePtr make_ordered_value(const char *str, uint64_t weight) {
         uint64_t len = strlen(str);
-        char *data = static_cast<char *>(malloc(len));
-        memcpy(data, str, len);
-        auto ov = new OrderedValue();
-        ov->weight = weight;
-        ov->data = data;
-        ov->size = len;
-        return ov;
+        return new OrderedValue(weight,str,len);
     }
 
     static OrderedValuePtr make_ordered_value(const std::string &str, uint64_t weight) {
-        uint64_t len = str.size();
-        char *data = static_cast<char *>(malloc(len));
-        memcpy(data, str.c_str(), len);
-        auto ov = new OrderedValue();
-        ov->weight = weight;
-        ov->data = data;
-        ov->size = len;
-        return ov;
+        return new OrderedValue(weight,str.c_str(),str.length());
     }
 
     // Helper to create KeyPtr
     static KeyPtr make_key_ptr(const std::string &str) {
-        return new Key(str.size(), str.c_str());
+        return new Key(str.length(), str.c_str());
     }
 
     static KeyPtr make_key_ptr(const char *str, uint32_t size) {
