@@ -122,7 +122,14 @@ struct StreamCallData : public RpcCallDataBase {
         } else if (state == State::READING) {
             if (ok) {
                 if (chunk_accumulator) {
-                    chunk_accumulator(accumulated_result, current_chunk);
+                    try {
+                        chunk_accumulator(accumulated_result, current_chunk);
+                    } catch (...) {
+                        state = State::FINISHING;
+                        status = grpc::Status(grpc::UNKNOWN, "Exception in chunk_accumulator");
+                        reader->Finish(&status, this);
+                        return;
+                    }
                 }
                 // Request next chunk
                 reader->Read(&current_chunk, this);

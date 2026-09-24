@@ -187,6 +187,11 @@ OrderedKey *keyRequestToKey(const ::hurricache::OrderedKey &request, KeyHint *hi
         if (has_week_hash) _weak_hash = request.keyhint().week_hash();
     }
 
+    // Validate payload consistency — prevent out-of-bounds reads on malformed data
+    if (request.has_payload() && request.payload().size() != request.payload().payload().size()) [[unlikely]] {
+        return nullptr;
+    }
+
     if (request.has_compressioninfo())[[unlikely]] {
         const auto &cInfo = request.compressioninfo();
         size = cInfo.rawsize();

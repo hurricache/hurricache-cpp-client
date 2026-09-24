@@ -17,20 +17,14 @@
 class FastCacheStandaloneClient {
 public:
     // Constructors
-    FastCacheStandaloneClient(const std::string &host, int32_t port, int32_t defaultClientId,
-                              std::chrono::milliseconds timeout, int32_t defaultCompressionThreshold = 1024);
+    FastCacheStandaloneClient(const std::string &host, int32_t port, std::chrono::milliseconds timeout,
+                              int32_t defaultCompressionThreshold = 1024);
 
-    FastCacheStandaloneClient(const std::string &host, int32_t port, int32_t defaultClientId,
-                              std::chrono::milliseconds timeout);
-
-    FastCacheStandaloneClient(const std::string &host, int32_t port, int32_t clientId);
+    FastCacheStandaloneClient(const std::string &host, int32_t port, std::chrono::milliseconds timeout);
 
     FastCacheStandaloneClient(const std::string &host, int32_t port);
 
-    FastCacheStandaloneClient(const std::string &host, int32_t port, std::chrono::milliseconds duration);
-
-
-    FastCacheStandaloneClient(std::shared_ptr<grpc::Channel> channel, std::string target, int32_t defaultClientId,
+    FastCacheStandaloneClient(std::shared_ptr<grpc::Channel> channel, std::string target,
                               std::chrono::milliseconds duration, int32_t defaultCompressionThreshold = 1024);
 
 
@@ -39,7 +33,7 @@ public:
 
     [[nodiscard]] std::string getTarget() const;
 
-    [[nodiscard]] int32_t getDefaultClientId() const;
+
 
     [[nodiscard]] std::chrono::milliseconds getDefaultTimeout() const;
 
@@ -424,7 +418,7 @@ private:
     // Class members
     std::unique_ptr<hurricache::HurriCacheGrpcService::Stub> asyncStub_;
     std::shared_ptr<grpc::Channel> channel_;
-    int32_t defaultClientId_;
+
     std::chrono::milliseconds defaultTimeout_;
     int32_t defaultCompressionThreshold_;
     std::string target_;

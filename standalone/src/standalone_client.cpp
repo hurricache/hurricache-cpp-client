@@ -7,10 +7,8 @@
 // =========================================================================
 
 FastCacheStandaloneClient::FastCacheStandaloneClient(
-    const std::string &host, int32_t port, int32_t defaultClientId,
-    std::chrono::milliseconds timeout, int32_t defaultCompressionThreshold)
-    : defaultClientId_(defaultClientId),
-      defaultTimeout_(timeout),
+    const std::string &host, int32_t port, std::chrono::milliseconds timeout, int32_t defaultCompressionThreshold)
+    : defaultTimeout_(timeout),
       defaultCompressionThreshold_(defaultCompressionThreshold),
       target_(host + ":" + std::to_string(port)) {
 
@@ -26,28 +24,19 @@ FastCacheStandaloneClient::FastCacheStandaloneClient(
 }
 
 FastCacheStandaloneClient::FastCacheStandaloneClient(
-    const std::string &host, int32_t port, int32_t defaultClientId, std::chrono::milliseconds timeout)
-    : FastCacheStandaloneClient(host, port, defaultClientId, timeout, kDefaultCompressionThreshold) {
-}
-
-FastCacheStandaloneClient::FastCacheStandaloneClient(const std::string &host, int32_t port, int32_t clientId)
-    : FastCacheStandaloneClient(host, port, clientId, std::chrono::seconds(1), kDefaultCompressionThreshold) {
+    const std::string &host, int32_t port, std::chrono::milliseconds timeout)
+    : FastCacheStandaloneClient(host, port, timeout, kDefaultCompressionThreshold) {
 }
 
 FastCacheStandaloneClient::FastCacheStandaloneClient(const std::string &host, int32_t port)
-    : FastCacheStandaloneClient(host, port, 0, std::chrono::seconds(1), kDefaultCompressionThreshold) {
+    : FastCacheStandaloneClient(host, port, std::chrono::seconds(1), kDefaultCompressionThreshold) {
 }
 
-FastCacheStandaloneClient::FastCacheStandaloneClient(const std::string &host, int32_t port,
-                                                     std::chrono::milliseconds duration)
-    : FastCacheStandaloneClient(host, port, 0, duration, kDefaultCompressionThreshold) {
-}
 
 FastCacheStandaloneClient::FastCacheStandaloneClient(
-    std::shared_ptr<grpc::Channel> channel, std::string target, int32_t defaultClientId,
+    std::shared_ptr<grpc::Channel> channel, std::string target,
     std::chrono::milliseconds duration, int32_t defaultCompressionThreshold)
     : channel_(std::move(channel)),
-      defaultClientId_(defaultClientId),
       defaultTimeout_(duration),
       defaultCompressionThreshold_(defaultCompressionThreshold),
       target_(std::move(target)) {
@@ -64,7 +53,6 @@ std::string FastCacheStandaloneClient::toString() const {
 }
 
 std::string FastCacheStandaloneClient::getTarget() const { return target_; }
-int32_t FastCacheStandaloneClient::getDefaultClientId() const { return defaultClientId_; }
 std::chrono::milliseconds FastCacheStandaloneClient::getDefaultTimeout() const { return defaultTimeout_; }
 int32_t FastCacheStandaloneClient::getDefaultCompressionThreshold() const { return defaultCompressionThreshold_; }
 
@@ -420,7 +408,16 @@ std::future<ValuePtr> FastCacheStandaloneClient::getElementAtPosition(const Key 
 std::future<ValuePtr> FastCacheStandaloneClient::getElementWithWeight(const Key &key, const KeyHint *hint, uint64_t pos,
                                                                    int32_t clientId,
                                                                    std::chrono::milliseconds timeout) {
-    return getElementAtPosition(key, hint, pos, clientId, timeout);
+    
+    return SendAsyncRequest<hurricache::KeyPositionRequest, hurricache::ValueResponse, ValuePtr>(
+        buildPositionRequestProto(key, hint, clientId, pos), timeout,
+        &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetElementAtPosition,
+        [](hurricache::ValueResponse &resp) -> ValuePtr {
+            if (resp.has_value_ordered()) {
+                return valueRequestToOrderedValue(resp.value_ordered());
+            }
+            return nullptr;
+        });
 }
 
 // =========================================================================
@@ -473,7 +470,16 @@ std::future<ValuePtr> FastCacheStandaloneClient::getAndRemoveElementAtPosition(c
 std::future<ValuePtr> FastCacheStandaloneClient::getAndRemoveElementWithWeight(const Key &key, const KeyHint *hint,
                                                                             uint64_t pos, int32_t clientId,
                                                                             std::chrono::milliseconds timeout) {
-    return getAndRemoveElementAtPosition(key, hint, pos, clientId, timeout);
+    
+    return SendAsyncRequest<hurricache::KeyPositionRequest, hurricache::ValueResponse, ValuePtr>(
+        buildPositionRequestProto(key, hint, clientId, pos), timeout,
+        &hurricache::HurriCacheGrpcService::StubInterface::AsyncgetAndRemoveElementAtPosition,
+        [](hurricache::ValueResponse &resp) -> ValuePtr {
+            if (resp.has_value_ordered()) {
+                return valueRequestToOrderedValue(resp.value_ordered());
+            }
+            return nullptr;
+        });
 }
 
 // =========================================================================
@@ -737,8 +743,13 @@ std::future<uint32_t> FastCacheStandaloneClient::addElementToPositionBefore(cons
                                                                             ValuePtr pivot,
                                                                             int32_t clientId,
                                                                             std::chrono::milliseconds timeout) {
+    if (pivot == nullptr) {
+        std::promise<uint32_t> p;
+        p.set_value(0);
+        return p.get_future();
+    }
+
     hurricache::AddToValRequest request;
-    
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
     request.set_isbefore(true);
     *request.mutable_pos() = buildValueProtoNoTtl(pivot, clientId);
@@ -757,8 +768,13 @@ std::future<uint32_t> FastCacheStandaloneClient::addElementToPositionAfter(const
                                                                            ValuePtr pivot,
                                                                            int32_t clientId,
                                                                            std::chrono::milliseconds timeout) {
+    if (pivot == nullptr) {
+        std::promise<uint32_t> p;
+        p.set_value(0);
+        return p.get_future();
+    }
+
     hurricache::AddToValRequest request;
-    
     *request.mutable_key() = buildKeyProto(key, hint, clientId);
     request.set_isbefore(false);
     *request.mutable_pos() = buildValueProtoNoTtl(pivot, clientId);
@@ -850,9 +866,9 @@ std::future<LockStatus> FastCacheStandaloneClient::lockObject(const Key &key, co
     request.set_locktype(static_cast<hurricache::LockType>(type));
     request.set_clientid(clientId);
     if (duration.count() > 0) {
-        auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        auto now_s = std::chrono::duration_cast<std::chrono::seconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
-        request.set_lockduration(static_cast<uint32_t>(now_ms + duration.count()));
+        request.set_lockduration(static_cast<uint32_t>(now_s) + static_cast<uint32_t>(duration.count() / 1000));
     }
     return SendAsyncRequest<hurricache::LockRequest, hurricache::LockResponse, LockStatus>(
         request, timeout, &hurricache::HurriCacheGrpcService::StubInterface::AsynclockObject,
