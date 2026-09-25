@@ -24,7 +24,7 @@ namespace test_base {
 
     // Helper to create Value from string
     static ValuePtr make_value(const std::string &str) {
-        return new Value(const_cast<char *>(str.c_str()), static_cast<uint64_t>(str.length()));
+        return new Value(const_cast<char *>(str.c_str()), str.length());
     }
 
     // Helper to create KeyHint

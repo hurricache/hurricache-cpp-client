@@ -52,6 +52,10 @@ Key::~Key() {
     }
 }
 
+Key::Key(Key &&other) noexcept : size(other.size), data(other.data) {
+    other.size = 0;
+    other.data = nullptr;
+}
 Value::Value() : size(0), data(nullptr) {}
 
 Value::Value(const char* src_data, uint64_t src_size) : size(src_size) {

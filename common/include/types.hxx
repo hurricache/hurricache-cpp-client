@@ -28,7 +28,7 @@ struct Key {
     Key(uint32_t src_size, const char *src_data);
 
     Key(const char *src_data, uint32_t src_size);
-
+    Key(Key &&other) noexcept;
     virtual ~Key();
     Key(const Key &) = delete;
     Key& operator=(const Key &) = delete;
