@@ -187,4 +187,74 @@ void free_content(std::map<Key,Value> &content) {
 }
 
 
+template<typename Client, typename RequestType, typename ResponseType, typename ResultType>
+std::future<ResultType> SendAsyncRequest(
+    Client *client,
+    const RequestType &request,
+    std::chrono::milliseconds timeout,
+    auto grpc_method_ptr,
+    std::function<ResultType(ResponseType &)> transformer = {}) {
+
+
+    if (client->isShutdown()) [[unlikely]] {
+        std::promise<ResultType> p;
+        p.set_exception(std::make_exception_ptr(
+            std::runtime_error("Client is shut down")));
+        return p.get_future();
+    }
+
+    auto *call = new RpcCallData<ResponseType, ResultType>();
+    call->transformer = std::move(transformer);
+    std::future<ResultType> future = call->promise.get_future();
+
+    std::chrono::milliseconds effectiveTimeout = (timeout.count() > 0) ? timeout : client->getDefaultTimeout();
+    if (effectiveTimeout.count() > 0) {
+        call->context.set_deadline(std::chrono::system_clock::now() + effectiveTimeout);
+    }
+
+    // Вызов метода через стаб и очередь клиента (предполагаем наличие геттеров getAsyncStub() и getCompletionQueue())
+    auto stub = client->getAsyncStub();
+    auto &cq = client->getCompletionQueue();
+
+    auto reader = (stub->*grpc_method_ptr)(&call->context, request, &cq);
+    reader->StartCall();
+    reader->Finish(&call->response, &call->status, call);
+
+    return future;
+}
+
+
+template<typename Client, typename RequestType, typename ResponseChunkType, typename ResultType>
+std::future<ResultType> SendAsyncStreamRequest(
+    Client *client,
+    const RequestType &request,
+    std::chrono::milliseconds timeout,
+    auto grpc_method_ptr,
+    std::function<void(ResultType &, ResponseChunkType &)> accumulator) {
+
+    if (client->isShutdown()) [[unlikely]] {
+        std::promise<ResultType> p;
+        p.set_exception(std::make_exception_ptr(
+            std::runtime_error("Client is shut down")));
+        return p.get_future();
+    }
+
+    auto *call = new StreamCallData<ResponseChunkType, ResultType>();
+    call->chunk_accumulator = std::move(accumulator);
+    std::future<ResultType> future = call->promise.get_future();
+
+    std::chrono::milliseconds effectiveTimeout = (timeout.count() > 0) ? timeout : client->getDefaultTimeout();
+    if (effectiveTimeout.count() > 0) {
+        call->context.set_deadline(std::chrono::system_clock::now() + effectiveTimeout);
+    }
+
+    auto stub = client->getAsyncStub();
+    auto &cq = client->getCompletionQueue();
+
+    call->reader = (stub->*grpc_method_ptr)(&call->context, request, &cq);
+    call->reader->StartCall(call);
+
+    return future;
+}
+
 #endif //HURRICACHE_CPP_CLIENT_UTILS_HXX

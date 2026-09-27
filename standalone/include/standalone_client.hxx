@@ -9,7 +9,6 @@
 #include <thread>
 
 #include "types.hxx"
-#include "utils.hxx"
 
 // Expected types/structures (from project context)
 
@@ -416,6 +415,13 @@ public:
 
     ~FastCacheStandaloneClient();
 
+    [[nodiscard]] hurricache::HurriCacheGrpcService::StubInterface* getAsyncStub() const {
+        return asyncStub_.get();
+    }
+
+    [[nodiscard]] grpc::CompletionQueue& getCompletionQueue() {
+        return const_cast<grpc::CompletionQueue&>(cq_); // или не константная ссылка
+    }
 private:
     // Class members
     std::unique_ptr<hurricache::HurriCacheGrpcService::Stub> asyncStub_;
@@ -430,56 +436,5 @@ private:
     void RunCompletionQueue();
 
     static constexpr int32_t kDefaultCompressionThreshold = 64 * 1024; // 64KB default
-
-    template<typename RequestType, typename ResponseType, typename ResultType>
-    std::future<ResultType> SendAsyncRequest(
-        const RequestType &request,
-        std::chrono::milliseconds timeout,
-        auto grpc_method_ptr, // Pointer to gRPC stub async method
-        std::function<ResultType(ResponseType &)> transformer = {}) {
-        if (isShutdown()) [[unlikely]] {
-            std::promise<ResultType> p;
-            p.set_exception(std::make_exception_ptr(
-                std::runtime_error("Client is shut down")));
-            return p.get_future();
-        }
-
-        auto *call = new RpcCallData<ResponseType, ResultType>();
-        call->transformer = std::move(transformer);
-        std::future<ResultType> future = call->promise.get_future();
-        std::chrono::milliseconds effectiveTimeout = (timeout.count() > 0) ? timeout : defaultTimeout_;
-        if (effectiveTimeout.count() > 0) {
-            call->context.set_deadline(std::chrono::system_clock::now() + effectiveTimeout);
-        }
-
-        // Call passed stub method via gRPC (using Member Pointer)
-        auto reader = (asyncStub_.get()->*grpc_method_ptr)(&call->context, request, &cq_);
-        reader->StartCall();
-        reader->Finish(&call->response, &call->status, call);
-
-        return future;
-    }
-
-    template<typename RequestType, typename ResponseChunkType, typename ResultType>
-    std::future<ResultType> SendAsyncStreamRequest(
-        const RequestType &request,
-        std::chrono::milliseconds timeout,
-        auto grpc_method_ptr, // Pointer to PrepareAsync... method for stream
-        std::function<void(ResultType &, ResponseChunkType &)> accumulator) {
-        auto *call = new StreamCallData<ResponseChunkType, ResultType>();
-        call->chunk_accumulator = std::move(accumulator);
-        std::future<ResultType> future = call->promise.get_future();
-
-        // Configure timeout
-        std::chrono::milliseconds effectiveTimeout = (timeout.count() > 0) ? timeout : defaultTimeout_;
-        if (effectiveTimeout.count() > 0) {
-            call->context.set_deadline(std::chrono::system_clock::now() + effectiveTimeout);
-        }
-        call->reader = (asyncStub_.get()->*grpc_method_ptr)(&call->context, request, &cq_);
-
-        call->reader->StartCall(call);
-
-        return future;
-    }
 
 };
