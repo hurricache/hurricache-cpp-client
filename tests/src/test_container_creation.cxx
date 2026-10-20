@@ -16,6 +16,8 @@ static void testCreateQueue(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateQueue... ";
     try {
         Key key = test_base::make_key("queue1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("item1"),
@@ -25,10 +27,13 @@ static void testCreateQueue(FastCacheStandaloneClient &client) {
         auto hint = client.createQueue(key, nullptr, &initial).get();
         assert(hint.strong_hash != 0);
         free_content(initial);
-        // Verify by streaming
-        auto items = client.streamVector(key).get();
-        assert(items.size() == 2);
-        free_content(items);
+        // Verify by reading from queue
+        auto r1 = client.getAndRemoveFront(key).get();
+        auto r2 = client.getAndRemoveFront(key).get();
+        assert(std::string(r1->data, r1->size) == "item1");
+        delete r1;
+        assert(std::string(r2->data, r2->size) == "item2");
+        delete r2;
 
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
@@ -40,6 +45,8 @@ static void testCreateList(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateList... ";
     try {
         Key key = test_base::make_key("list1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("item1"),
@@ -63,6 +70,8 @@ static void testCreateVector(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateVector... ";
     try {
         Key key = test_base::make_key("vector1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("item1"),
@@ -86,6 +95,8 @@ static void testCreateSet(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateSet... ";
     try {
         Key key = test_base::make_key("set1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("item1"),
@@ -109,6 +120,8 @@ static void testCreateOrderedSet(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateOrderedSet... ";
     try {
         Key key = test_base::make_key("oset1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<OrderedValuePtr> initial = {
             test_base::make_ordered_value("item1", 100),
@@ -132,6 +145,8 @@ static void testCreateMap(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateMap... ";
     try {
         Key key = test_base::make_key("map1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::map<KeyPtr, ValuePtr> initial;
         auto k1 = test_base::make_key_ptr("key1");
@@ -156,6 +171,8 @@ static void testCreateOrderedMap(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateOrderedMap... ";
     try {
         Key key = test_base::make_key("omap1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
 
         // Create empty ordered map first
         std::map<OrderedKeyPtr, OrderedValuePtr> initial;

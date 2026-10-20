@@ -19,6 +19,8 @@ static void testLockObject(FastCacheStandaloneClient &client) {
     std::cout << "  testLockObject... ";
     try {
         Key key = test_base::make_key("lockTest1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createList(key, nullptr, &initial).get();
@@ -35,6 +37,8 @@ static void testUnlockObject(FastCacheStandaloneClient &client) {
     std::cout << "  testUnlockObject... ";
     try {
         Key key = test_base::make_key("unlockTest1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createList(key, nullptr, &initial).get();
@@ -59,11 +63,12 @@ static void testAtomicExchange(FastCacheStandaloneClient &client) {
     std::cout << "  testAtomicExchange... ";
     try {
         Key key = test_base::make_key("atomicExchange1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
-        // Create key-value first
-        Value *initVal = test_base::make_value("100");
-        client.createKeyValue(key, nullptr, *initVal).get();
-        delete initVal;
+        // Create INT key first
+        Value initVal(static_cast<int64_t>(100));
+        client.createKeyValue(key, nullptr, initVal).get();
         
         auto future = client.atomicExchange(key, nullptr, 300, std::chrono::milliseconds(60000)).get();
         
@@ -82,11 +87,12 @@ static void testAtomicAdd(FastCacheStandaloneClient &client) {
     std::cout << "  testAtomicAdd... ";
     try {
         Key key = test_base::make_key("atomicAdd1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
-        // Create key-value first
-        Value *initVal = test_base::make_value("100");
-        client.createKeyValue(key, nullptr, *initVal).get();
-        delete initVal;
+        // Create INT key first
+        Value initVal(static_cast<int64_t>(100));
+        client.createKeyValue(key, nullptr, initVal).get();
         
         auto future = client.atomicAdd(key, nullptr, static_cast<int64_t>(50)).get();
         
@@ -105,10 +111,11 @@ static void testAtomicSub(FastCacheStandaloneClient &client) {
     std::cout << "  testAtomicSub... ";
     try {
         Key key = test_base::make_key("atomicSub1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
-        Value *initVal = test_base::make_value("100");
-        client.createKeyValue(key, nullptr, *initVal).get();
-        delete initVal;
+        Value initVal(static_cast<int64_t>(100));
+        client.createKeyValue(key, nullptr, initVal).get();
         
         auto future = client.atomicSub(key, nullptr, static_cast<int64_t>(25)).get();
         
@@ -127,10 +134,11 @@ static void testAtomicAnd(FastCacheStandaloneClient &client) {
     std::cout << "  testAtomicAnd... ";
     try {
         Key key = test_base::make_key("atomicAnd1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
-        Value *initVal = test_base::make_value("255");
-        client.createKeyValue(key, nullptr, *initVal).get();
-        delete initVal;
+        Value initVal(static_cast<int64_t>(255));
+        client.createKeyValue(key, nullptr, initVal).get();
         
         auto future = client.atomicAnd(key, nullptr, 0x0F).get();
         
@@ -149,10 +157,11 @@ static void testAtomicOr(FastCacheStandaloneClient &client) {
     std::cout << "  testAtomicOr... ";
     try {
         Key key = test_base::make_key("atomicOr1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
-        Value *initVal = test_base::make_value("0");
-        client.createKeyValue(key, nullptr, *initVal).get();
-        delete initVal;
+        Value initVal(static_cast<int64_t>(0));
+        client.createKeyValue(key, nullptr, initVal).get();
         
         auto future = client.atomicOr(key, nullptr, 0xF0).get();
         
@@ -171,10 +180,11 @@ static void testAtomicXor(FastCacheStandaloneClient &client) {
     std::cout << "  testAtomicXor... ";
     try {
         Key key = test_base::make_key("atomicXor1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
-        Value *initVal = test_base::make_value("255");
-        client.createKeyValue(key, nullptr, *initVal).get();
-        delete initVal;
+        Value initVal(static_cast<int64_t>(255));
+        client.createKeyValue(key, nullptr, initVal).get();
         
         auto future = client.atomicXor(key, nullptr, 0x0F).get();
         
@@ -193,10 +203,11 @@ static void testAtomicCompareAndSet(FastCacheStandaloneClient &client) {
     std::cout << "  testAtomicCompareAndSet... ";
     try {
         Key key = test_base::make_key("atomicCAS1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
-        Value *initVal = test_base::make_value("200");
-        client.createKeyValue(key, nullptr, *initVal).get();
-        delete initVal;
+        Value initVal(static_cast<int64_t>(200));
+        client.createKeyValue(key, nullptr, initVal).get();
         
         auto future = client.atomicCompareAndSet(key, nullptr, 200, 400).get();
         
@@ -215,6 +226,8 @@ static void testGetContainerValue(FastCacheStandaloneClient &client) {
     std::cout << "  testGetContainerValue... ";
     try {
         Key key = test_base::make_key("containerGet1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         // Create map with initial data
         KeyPtr k1 = test_base::make_key_ptr("key1");
@@ -223,10 +236,9 @@ static void testGetContainerValue(FastCacheStandaloneClient &client) {
         initial[k1] = v1;
         
         client.createMap(key, nullptr, &initial).get();
-        free_content(initial);
 
-        Key elementKey = test_base::make_key("key1");
-        auto future = client.getContainerValue(key, nullptr, elementKey).get();
+        // Use k1 BEFORE freeing
+        auto future = client.getContainerValue(key, nullptr, *k1).get();
 
         if (future && future->size > 0) {
             std::cout << "PASSED (getContainerValue returned value size=" << future->size << ")\n";
@@ -234,6 +246,7 @@ static void testGetContainerValue(FastCacheStandaloneClient &client) {
         } else {
             std::cout << "PASSED (getContainerValue returned empty)\n";
         }
+        free_content(initial);
 
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
@@ -244,6 +257,8 @@ static void testGetAndRemoveContainerValue(FastCacheStandaloneClient &client) {
     std::cout << "  testGetAndRemoveContainerValue... ";
     try {
         Key key = test_base::make_key("containerGetRem1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         KeyPtr k1 = test_base::make_key_ptr("key1");
         ValuePtr v1 = test_base::make_value("val1");
@@ -251,10 +266,9 @@ static void testGetAndRemoveContainerValue(FastCacheStandaloneClient &client) {
         initial[k1] = v1;
         
         client.createMap(key, nullptr, &initial).get();
-        free_content(initial);
 
-        Key elementKey = test_base::make_key("key1");
-        auto future = client.getAndRemoveContainerValue(key, nullptr, elementKey).get();
+        // Use k1 BEFORE freeing
+        auto future = client.getAndRemoveContainerValue(key, nullptr, *k1).get();
         
         if (future && future->size > 0) {
             std::cout << "PASSED (getAndRemoveContainerValue returned value size=" << future->size << ")\n";
@@ -262,6 +276,7 @@ static void testGetAndRemoveContainerValue(FastCacheStandaloneClient &client) {
         } else {
             std::cout << "PASSED (getAndRemoveContainerValue returned empty)\n";
         }
+        free_content(initial);
 
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
@@ -272,6 +287,8 @@ static void testContainsContainerKey(FastCacheStandaloneClient &client) {
     std::cout << "  testContainsContainerKey... ";
     try {
         Key key = test_base::make_key("containerContains1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         KeyPtr k1 = test_base::make_key_ptr("key1");
         ValuePtr v1 = test_base::make_value("val1");
@@ -280,10 +297,11 @@ static void testContainsContainerKey(FastCacheStandaloneClient &client) {
         
         client.createMap(key, nullptr, &initial).get();
         
-        Key elementKey = test_base::make_key("key1");
-        auto future = client.containsContainerKey(key, nullptr, elementKey).get();
+        // Use k1 BEFORE freeing
+        auto future = client.containsContainerKey(key, nullptr, *k1).get();
+        assert(future); // Key must exist!
+        std::cout << "PASSED (containsContainerKey returned true)\n";
         free_content(initial);
-        std::cout << "PASSED (containsContainerKey returned " << (future ? "true" : "false") << ")\n";
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -293,6 +311,8 @@ static void testUpdateContainerValue(FastCacheStandaloneClient &client) {
     std::cout << "  testUpdateContainerValue... ";
     try {
         Key key = test_base::make_key("containerUpdate1");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         KeyPtr k1 = test_base::make_key_ptr("key1");
         ValuePtr v1 = test_base::make_value("val1");
@@ -300,10 +320,9 @@ static void testUpdateContainerValue(FastCacheStandaloneClient &client) {
         initial[k1] = v1;
         
         client.createMap(key, nullptr, &initial).get();
-        free_content(initial);
-        Key elementKey = test_base::make_key("key1");
+        // Use k1 BEFORE freeing
         Value newValue("update", 6);
-        auto future = client.updateContainerValue(key, nullptr, elementKey, newValue).get();
+        auto future = client.updateContainerValue(key, nullptr, *k1, newValue).get();
         
         if (future && future->size > 0) {
             std::cout << "PASSED (updateContainerValue returned value size=" << future->size << ")\n";
@@ -311,6 +330,7 @@ static void testUpdateContainerValue(FastCacheStandaloneClient &client) {
         } else {
             std::cout << "PASSED (updateContainerValue returned empty)\n";
         }
+        free_content(initial);
 
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
@@ -329,10 +349,10 @@ static void testRemoveFromContainerByKey(FastCacheStandaloneClient &client) {
         
         client.createMap(key, nullptr, &initial).get();
         
-        Key elementKey = test_base::make_key("key1");
-        auto future = client.removeFromContainer(key, nullptr, elementKey).get();
-        free_content(initial);
+        // Use k1 BEFORE freeing
+        auto future = client.removeFromContainer(key, nullptr, *k1).get();
         std::cout << "PASSED (removeFromContainerByKey returned " << future << ")\n";
+        free_content(initial);
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }

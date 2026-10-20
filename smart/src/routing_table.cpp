@@ -1,5 +1,6 @@
 #include <routing_table.hxx>
 #include <iostream>
+#include <grpcpp/create_channel.h>
 
 void RoutingTable::updateFromCoordinator(
     int32_t max_shards,
@@ -43,7 +44,7 @@ void RoutingTable::updateFromCoordinator(
         auto client_it = routing_table_target_.find(peer.target());
         if (client_it == routing_table_target_.end()) continue;
         
-        for (auto partition_id : peer.partition_ids()) {
+        for (auto partition_id : peer.partitionids()) {
             auto key = std::make_pair(peer.role(), partition_id);
             routing_table_[key] = client_it->second;
         }
@@ -78,7 +79,6 @@ RoutingTable::SharedClient RoutingTable::createClient(
     
     grpc::ChannelArguments args;
     args.SetMaxReceiveMessageSize(config.max_inbound_message_size);
-    args.SetFlowControlWindow(config.flow_control_window);
     
     auto channel = grpc::CreateCustomChannel(target, grpc::InsecureChannelCredentials(), args);
     return std::make_shared<FastCacheStandaloneClient>(
