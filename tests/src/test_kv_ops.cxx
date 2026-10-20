@@ -16,13 +16,18 @@ static void testCreateKeyValue(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateKeyValue... ";
     try {
         Key key = test_base::make_key("kv_test1");
-        Value value("hello", 5);
+        // Cleanup if exists
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
+        
+        Value value(static_cast<int64_t>(42));
         
         auto hint = client.createKeyValue(key, nullptr, value).get();
         assert(hint.strong_hash != 0);
         
         auto result = client.getValue(key, nullptr).get();
-        assert(std::string(result->data, result->size) == "hello");
+        assert(result->type == INT);
+        assert(result->int_value == 42);
         delete result;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
@@ -34,12 +39,15 @@ static void testGetValue(FastCacheStandaloneClient &client) {
     std::cout << "  testGetValue... ";
     try {
         Key key = test_base::make_key("kv_test_get");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
-        Value value("world", 5);
+        Value value(static_cast<int64_t>(100));
         client.createKeyValue(key, nullptr, value).get();
         
         auto result = client.getValue(key, nullptr).get();
-        assert(std::string(result->data, result->size) == "world");
+        assert(result->type == INT);
+        assert(result->int_value == 100);
         delete result;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
@@ -51,17 +59,21 @@ static void testUpdateKeyValue(FastCacheStandaloneClient &client) {
     std::cout << "  testUpdateKeyValue... ";
     try {
         Key key = test_base::make_key("kv_test_update");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
-        Value value("old", 3);
+        Value value(static_cast<int64_t>(200));
         client.createKeyValue(key, nullptr, value).get();
         
-        Value newValue("new_value", 9);
+        Value newValue(static_cast<int64_t>(300));
         auto updated = client.updateKeyValue(key, nullptr, newValue).get();
-        assert(std::string(updated->data, updated->size) == "old");
+        assert(updated->type == INT);
+        assert(updated->int_value == 200);
         delete updated;
         
         auto result = client.getValue(key, nullptr).get();
-        assert(std::string(result->data, result->size) == "new_value");
+        assert(result->type == INT);
+        assert(result->int_value == 300);
         delete result;
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
@@ -73,11 +85,13 @@ static void testExistKeyExisting(FastCacheStandaloneClient &client) {
     std::cout << "  testExistKeyExisting... ";
     try {
         Key key = test_base::make_key("kv_test_exist");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
-        Value value("data", 4);
+        Value value(static_cast<int64_t>(300));
         client.createKeyValue(key, nullptr, value).get();
         
-        auto exists = client.existKey(key).get();
+        exists = client.existKey(key).get();
         assert(exists);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
@@ -102,14 +116,16 @@ static void testRemoveKeyValue(FastCacheStandaloneClient &client) {
     std::cout << "  testRemoveKeyValue... ";
     try {
         Key key = test_base::make_key("kv_test_remove");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
-        Value value("data", 4);
+        Value value(static_cast<int64_t>(300));
         client.createKeyValue(key, nullptr, value).get();
         
         auto removed = client.remove(key).get();
         assert(removed);
         
-        auto exists = client.existKey(key).get();
+        exists = client.existKey(key).get();
         assert(!exists);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
@@ -121,15 +137,18 @@ static void testGetAndDeleteValue(FastCacheStandaloneClient &client) {
     std::cout << "  testGetAndDeleteValue... ";
     try {
         Key key = test_base::make_key("kv_test_del");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
-        Value value("delete_me", 9);
+        Value value(static_cast<int64_t>(400));
         client.createKeyValue(key, nullptr, value).get();
         
         auto deleted = client.getAndDeleteValue(key).get();
-        assert(std::string(deleted->data, deleted->size) == "delete_me");
+        assert(deleted->type == INT);
+        assert(deleted->int_value == 400);
         delete deleted;
         
-        auto exists = client.existKey(key).get();
+        exists = client.existKey(key).get();
         assert(!exists);
         std::cout << "PASSED\n";
     } catch (const std::exception &e) {
@@ -141,8 +160,10 @@ static void testLockKeyValue(FastCacheStandaloneClient &client) {
     std::cout << "  testLockKeyValue... ";
     try {
         Key key = test_base::make_key("kv_test_lock");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
-        Value value("locked", 6);
+        Value value(static_cast<int64_t>(500));
         client.createKeyValue(key, nullptr, value).get();
         
         int32_t ownerId = 1;
@@ -161,8 +182,10 @@ static void testSetTtlKeyValue(FastCacheStandaloneClient &client) {
     std::cout << "  testSetTtlKeyValue... ";
     try {
         Key key = test_base::make_key("kv_test_ttl");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
-        Value value("ttl_test", 8);
+        Value value(static_cast<int64_t>(600));
         client.createKeyValue(key, nullptr, value).get();
         
         auto setTtl = client.setTtl(key, nullptr, 5000).get();

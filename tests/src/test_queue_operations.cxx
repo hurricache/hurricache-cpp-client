@@ -15,6 +15,8 @@ static void testCreateEmptyQueue(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateEmptyQueue... ";
     try {
         Key key = test_base::make_key("createEmptyQueue");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         client.createQueue(key).get();
         
         auto head = client.getHead(key).get();
@@ -30,6 +32,8 @@ static void testCreateQueueWithInitialData(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateQueueWithInitialData... ";
     try {
         Key key = test_base::make_key("createQueueWithInitialData");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("first"),
@@ -63,6 +67,8 @@ static void testGetHeadOnEmptyQueue(FastCacheStandaloneClient &client) {
     std::cout << "  testGetHeadOnEmptyQueue... ";
     try {
         Key key = test_base::make_key("emptyQueueGetHead");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         client.createQueue(key).get();
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         
@@ -79,6 +85,8 @@ static void testGetAndRemoveFrontOnEmptyQueue(FastCacheStandaloneClient &client)
     std::cout << "  testGetAndRemoveFrontOnEmptyQueue... ";
     try {
         Key key = test_base::make_key("emptyQueueGetAndRemove");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         client.createQueue(key).get();
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         
@@ -95,6 +103,8 @@ static void testGetAndRemoveFront(FastCacheStandaloneClient &client) {
     std::cout << "  testGetAndRemoveFront... ";
     try {
         Key key = test_base::make_key("getAndRemoveFront");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("first"),
@@ -125,6 +135,8 @@ static void testGetAndRemoveFrontOnSingleElement(FastCacheStandaloneClient &clie
     std::cout << "  testGetAndRemoveFrontOnSingleElement... ";
     try {
         Key key = test_base::make_key("singleElementQueue");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
 
         std::vector<ValuePtr> initial = {test_base::make_value("only")};
         client.createQueue(key, nullptr, &initial).get();
@@ -148,6 +160,8 @@ static void testGetFrontAndHead(FastCacheStandaloneClient &client) {
     std::cout << "  testGetFrontAndHead... ";
     try {
         Key key = test_base::make_key("getFrontHead");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
 
         std::vector<ValuePtr> initial = {
             test_base::make_value("first"),
@@ -174,6 +188,8 @@ static void testGetTail(FastCacheStandaloneClient &client) {
     std::cout << "  testGetTail... ";
     try {
         Key key = test_base::make_key("getTail");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
 
         std::vector<ValuePtr> initial = {
             test_base::make_value("first"),
@@ -201,6 +217,8 @@ static void testGetTailOnSingleElementQueue(FastCacheStandaloneClient &client) {
     std::cout << "  testGetTailOnSingleElementQueue... ";
     try {
         Key key = test_base::make_key("singleElementTail");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
 
         std::vector<ValuePtr> initial = {test_base::make_value("only")};
         client.createQueue(key, nullptr, &initial).get();
@@ -224,6 +242,8 @@ static void testGetAndRemoveTail(FastCacheStandaloneClient &client) {
     std::cout << "  testGetAndRemoveTail... ";
     try {
         Key key = test_base::make_key("getAndRemoveTail");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("first"),
@@ -255,6 +275,8 @@ static void testAddElementToTail(FastCacheStandaloneClient &client) {
     std::cout << "  testAddElementToTail... ";
     try {
         Key key = test_base::make_key("addElementToTail");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("first"),
@@ -289,6 +311,8 @@ static void testAddElementToHead(FastCacheStandaloneClient &client) {
     std::cout << "  testAddElementToHead... ";
     try {
         Key key = test_base::make_key("addElementToHead");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("second"),
@@ -323,6 +347,8 @@ static void testRemoveHead(FastCacheStandaloneClient &client) {
     std::cout << "  testRemoveHead... ";
     try {
         Key key = test_base::make_key("removeHead");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("first"),
@@ -353,6 +379,8 @@ static void testRemoveTail(FastCacheStandaloneClient &client) {
     std::cout << "  testRemoveTail... ";
     try {
         Key key = test_base::make_key("removeTail");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("first"),
@@ -383,6 +411,8 @@ static void testGetSizeReturnsZero(FastCacheStandaloneClient &client) {
     std::cout << "  testGetSizeReturnsZero... ";
     try {
         Key key = test_base::make_key("getSizeQueue");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("first"),
@@ -404,6 +434,8 @@ static void testRemoveQueue(FastCacheStandaloneClient &client) {
     std::cout << "  testRemoveQueue... ";
     try {
         Key key = test_base::make_key("removeQueue");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createQueue(key, nullptr, &initial).get();
@@ -428,6 +460,8 @@ static void testSetTtlAndGetTtlOnQueue(FastCacheStandaloneClient &client) {
     std::cout << "  testSetTtlAndGetTtlOnQueue... ";
     try {
         Key key = test_base::make_key("ttlQueue");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createQueue(key, nullptr, &initial).get();
@@ -449,6 +483,8 @@ static void testWriteLockOnQueue(FastCacheStandaloneClient &client) {
     std::cout << "  testWriteLockOnQueue... ";
     try {
         Key key = test_base::make_key("writeLockQueue");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createQueue(key, nullptr, &initial).get();
@@ -470,6 +506,8 @@ static void testReadLockOnQueue(FastCacheStandaloneClient &client) {
     std::cout << "  testReadLockOnQueue... ";
     try {
         Key key = test_base::make_key("readLockQueue");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createQueue(key, nullptr, &initial).get();

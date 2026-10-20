@@ -15,6 +15,8 @@ static void testCreateEmptySet(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateEmptySet... ";
     try {
         Key key = test_base::make_key("createEmptySet");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         client.createSet(key).get();
         
         auto items = client.streamSet(key).get();
@@ -30,6 +32,8 @@ static void testCreateSetWithInitialData(FastCacheStandaloneClient &client) {
     std::cout << "  testCreateSetWithInitialData... ";
     try {
         Key key = test_base::make_key("createSetWithInitialData");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("v1"),
@@ -54,6 +58,8 @@ static void testStreamSetContents(FastCacheStandaloneClient &client) {
     std::cout << "  testStreamSetContents... ";
     try {
         Key key = test_base::make_key("streamSetContents");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("a"),
@@ -79,6 +85,8 @@ static void testAddElementUnordered(FastCacheStandaloneClient &client) {
     std::cout << "  testAddElementUnordered... ";
     try {
         Key key = test_base::make_key("addElementUnordered");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("a"),
@@ -105,6 +113,8 @@ static void testGetSize(FastCacheStandaloneClient &client) {
     std::cout << "  testGetSize... ";
     try {
         Key key = test_base::make_key("getSize");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("a"),
@@ -126,6 +136,8 @@ static void testRemoveSet(FastCacheStandaloneClient &client) {
     std::cout << "  testRemoveSet... ";
     try {
         Key key = test_base::make_key("removeSet");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("item1"),
@@ -152,6 +164,8 @@ static void testSetTtlAndGetTtl(FastCacheStandaloneClient &client) {
     std::cout << "  testSetTtlAndGetTtl... ";
     try {
         Key key = test_base::make_key("setTtlAndGetTtl");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {
             test_base::make_value("a"),
@@ -175,6 +189,8 @@ static void testWriteLockOnSet(FastCacheStandaloneClient &client) {
     std::cout << "  testWriteLockOnSet... ";
     try {
         Key key = test_base::make_key("writeLockSet");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createSet(key, nullptr, &initial).get();
@@ -195,6 +211,8 @@ static void testReadLockOnSet(FastCacheStandaloneClient &client) {
     std::cout << "  testReadLockOnSet... ";
     try {
         Key key = test_base::make_key("readLockSet");
+        auto exists = client.existKey(key).get();
+        if (exists) client.remove(key).get();
         
         std::vector<ValuePtr> initial = {test_base::make_value("data")};
         client.createSet(key, nullptr, &initial).get();
