@@ -56,23 +56,37 @@ Key::Key(Key &&other) noexcept : size(other.size), data(other.data) {
     other.size = 0;
     other.data = nullptr;
 }
-Value::Value() : size(0), data(nullptr) {}
+Value::Value() : size(0), data(nullptr),type(BYTES) {}
 
-Value::Value(const char* src_data, uint64_t src_size) : size(src_size) {
+Value::Value(const char* src_data, uint64_t src_size) : size(src_size),type(BYTES) {
     if (size > 0 && src_data != nullptr) {
         data = new char[size];
-        std::memcpy(data, src_data, size);
+        memcpy(data, src_data, size);
     } else {
         data = nullptr;
         size = 0;
     }
 }
-Value::Value(Value &&other) noexcept : size(other.size), data(other.data) {
+
+Value::Value(const int64_t src_int):type(INT),int_value(src_int),size(sizeof(uint64_t)) {
+}
+
+Value::Value(const double src_double):type(DOUBLE),double_value(src_double),size(sizeof(double)) {
+}
+
+Value::Value(Value &&other) noexcept : size(other.size), type(other.type) {
+    if (type == BYTES) {
+        data = other.data;
+    } else {
+        int_value = other.int_value; // покрывает и int_value, и double_value через union
+    }
     other.size = 0;
+    other.type = BYTES;
     other.data = nullptr;
 }
+
 Value::~Value() {
-    if (data != nullptr) {
+    if (type == BYTES && data != nullptr) {
         delete [] data;
         data = nullptr;
     }
@@ -84,6 +98,18 @@ std::ostream &operator<<(std::ostream &os, const Key &obj) {
 }
 
 std::ostream &operator<<(std::ostream &os, const Value &obj) {
-    print_data_safely(os, obj.data, obj.size);
+    switch (obj.type) {
+        case INT:
+            os << "{type=INT, val=" << obj.int_value << "}";
+            break;
+        case DOUBLE:
+            os << "{type=DOUBLE, val=" << obj.double_value << "}";
+            break;
+        case BYTES:
+            os << "{type=BYTES, ";
+            print_data_safely(os, obj.data, obj.size);
+            os << "}";
+            break;
+    }
     return os;
 }

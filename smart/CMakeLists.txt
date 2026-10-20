@@ -31,14 +31,17 @@ add_custom_command(
 # Build smart client
 add_library(hurricache_smart_client STATIC
         src/smart_client.cpp
-        # Other smart client sources (e.g., routing logic via coordinator)
+        src/coordinator_client.cpp
+        src/routing_table.cpp
+        src/channel_config.cpp
         ${COORD_PROTO_SRCS}
 )
 
 target_compile_features(hurricache_smart_client PUBLIC cxx_std_23)
 
 target_include_directories(hurricache_smart_client PUBLIC
-        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
         PUBLIC
         "${COORD_GEN_DIR}"
 )
@@ -46,6 +49,7 @@ target_include_directories(hurricache_smart_client PUBLIC
 # Smart client uses both common hurricache (cache.proto) and its own coordinator
 target_link_libraries(hurricache_smart_client PUBLIC
         hurricache_common
+        hurricache_standalone_client
         gRPC::grpc++
         protobuf::libprotobuf
 )

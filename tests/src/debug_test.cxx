@@ -27,7 +27,7 @@ int main() {
     
     std::cout << "[5] Calling getTtl...\n";
     try {
-        auto future = client.getTtl(key, hint, 0, std::chrono::milliseconds(5000));
+        auto future = client.getTtl(key, &hint, 0, std::chrono::milliseconds(5000));
         auto result = future.get();
         std::cout << "[6] getTtl returned: " << result << "\n";
     } catch (const std::exception& e) {

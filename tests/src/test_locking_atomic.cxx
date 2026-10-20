@@ -52,71 +52,27 @@ static void testUnlockObject(FastCacheStandaloneClient &client) {
 // Atomic Tests
 // =========================================================================
 
-static void testAtomicLoad(FastCacheStandaloneClient &client) {
-    std::cout << "  testAtomicLoad... ";
-    try {
-        Key key = test_base::make_key("atomicLoad1");
-        
-        client.atomicCreate(key, nullptr, 100, std::chrono::milliseconds(60000)).get();
-        auto future = client.atomicLoad(key, nullptr).get();
-        
-        std::cout << "PASSED (atomicLoad returned " << future << ")\n";
-    } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
-    }
-}
-
-static void testAtomicLoadAndDelete(FastCacheStandaloneClient &client) {
-    std::cout << "  testAtomicLoadAndDelete... ";
-    try {
-        Key key = test_base::make_key("atomicLoadDel1");
-        
-        client.atomicCreate(key, nullptr, 200, std::chrono::milliseconds(60000)).get();
-        auto future = client.atomicLoadAndDelete(key, nullptr).get();
-        
-        std::cout << "PASSED (atomicLoadAndDelete returned " << future << ")\n";
-    } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
-    }
-}
-
-static void testAtomicCreate(FastCacheStandaloneClient &client) {
-    std::cout << "  testAtomicCreate... ";
-    try {
-        Key key = test_base::make_key("atomicCreate1");
-        
-        auto future = client.atomicCreate(key, nullptr, 100, std::chrono::milliseconds(60000)).get();
-        
-        std::cout << "PASSED (atomicCreate returned hint: weak=" << future.weak_hash 
-                  << ", strong=" << future.strong_hash << ")\n";
-    } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
-    }
-}
-
-static void testAtomicStore(FastCacheStandaloneClient &client) {
-    std::cout << "  testAtomicStore... ";
-    try {
-        Key key = test_base::make_key("atomicStore1");
-        
-        auto future = client.atomicStore(key, nullptr, 200, std::chrono::milliseconds(60000)).get();
-        
-        std::cout << "PASSED (atomicStore returned hint: weak=" << future.weak_hash 
-                  << ", strong=" << future.strong_hash << ")\n";
-    } catch (const std::exception &e) {
-        std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
-    }
-}
+// atomicCreate, atomicLoad, atomicLoadAndDelete, atomicStore - нет в standalone_client.hxx
+// Пропускаем эти тесты
 
 static void testAtomicExchange(FastCacheStandaloneClient &client) {
     std::cout << "  testAtomicExchange... ";
     try {
         Key key = test_base::make_key("atomicExchange1");
         
-        client.atomicCreate(key, nullptr, 100, std::chrono::milliseconds(60000)).get();
+        // Create key-value first
+        Value *initVal = test_base::make_value("100");
+        client.createKeyValue(key, nullptr, *initVal).get();
+        delete initVal;
+        
         auto future = client.atomicExchange(key, nullptr, 300, std::chrono::milliseconds(60000)).get();
         
-        std::cout << "PASSED (atomicExchange returned " << future << ")\n";
+        int64_t result = 0;
+        if (future) {
+            result = static_cast<int64_t>(future->int_value);
+            delete future;
+        }
+        std::cout << "PASSED (atomicExchange returned " << result << ")\n";
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -127,10 +83,19 @@ static void testAtomicAdd(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("atomicAdd1");
         
-        client.atomicCreate(key, nullptr, 100, std::chrono::milliseconds(60000)).get();
-        auto future = client.atomicAdd(key, nullptr, 50).get();
+        // Create key-value first
+        Value *initVal = test_base::make_value("100");
+        client.createKeyValue(key, nullptr, *initVal).get();
+        delete initVal;
         
-        std::cout << "PASSED (atomicAdd returned " << future << ")\n";
+        auto future = client.atomicAdd(key, nullptr, static_cast<int64_t>(50)).get();
+        
+        int64_t result = 0;
+        if (future) {
+            result = static_cast<int64_t>(future->int_value);
+            delete future;
+        }
+        std::cout << "PASSED (atomicAdd returned " << result << ")\n";
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -141,10 +106,18 @@ static void testAtomicSub(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("atomicSub1");
         
-        client.atomicCreate(key, nullptr, 100, std::chrono::milliseconds(60000)).get();
-        auto future = client.atomicSub(key, nullptr, 25).get();
+        Value *initVal = test_base::make_value("100");
+        client.createKeyValue(key, nullptr, *initVal).get();
+        delete initVal;
         
-        std::cout << "PASSED (atomicSub returned " << future << ")\n";
+        auto future = client.atomicSub(key, nullptr, static_cast<int64_t>(25)).get();
+        
+        int64_t result = 0;
+        if (future) {
+            result = static_cast<int64_t>(future->int_value);
+            delete future;
+        }
+        std::cout << "PASSED (atomicSub returned " << result << ")\n";
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -155,10 +128,18 @@ static void testAtomicAnd(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("atomicAnd1");
         
-        client.atomicCreate(key, nullptr, 0xFF, std::chrono::milliseconds(60000)).get();
+        Value *initVal = test_base::make_value("255");
+        client.createKeyValue(key, nullptr, *initVal).get();
+        delete initVal;
+        
         auto future = client.atomicAnd(key, nullptr, 0x0F).get();
         
-        std::cout << "PASSED (atomicAnd returned " << future << ")\n";
+        int64_t result = 0;
+        if (future) {
+            result = static_cast<int64_t>(future->int_value);
+            delete future;
+        }
+        std::cout << "PASSED (atomicAnd returned " << result << ")\n";
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -169,10 +150,18 @@ static void testAtomicOr(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("atomicOr1");
         
-        client.atomicCreate(key, nullptr, 0x00, std::chrono::milliseconds(60000)).get();
+        Value *initVal = test_base::make_value("0");
+        client.createKeyValue(key, nullptr, *initVal).get();
+        delete initVal;
+        
         auto future = client.atomicOr(key, nullptr, 0xF0).get();
         
-        std::cout << "PASSED (atomicOr returned " << future << ")\n";
+        int64_t result = 0;
+        if (future) {
+            result = static_cast<int64_t>(future->int_value);
+            delete future;
+        }
+        std::cout << "PASSED (atomicOr returned " << result << ")\n";
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -183,10 +172,18 @@ static void testAtomicXor(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("atomicXor1");
         
-        client.atomicCreate(key, nullptr, 0xFF, std::chrono::milliseconds(60000)).get();
+        Value *initVal = test_base::make_value("255");
+        client.createKeyValue(key, nullptr, *initVal).get();
+        delete initVal;
+        
         auto future = client.atomicXor(key, nullptr, 0x0F).get();
         
-        std::cout << "PASSED (atomicXor returned " << future << ")\n";
+        int64_t result = 0;
+        if (future) {
+            result = static_cast<int64_t>(future->int_value);
+            delete future;
+        }
+        std::cout << "PASSED (atomicXor returned " << result << ")\n";
     } catch (const std::exception &e) {
         std::cout << "SKIPPED (server unavailable: " << e.what() << ")\n";
     }
@@ -197,8 +194,11 @@ static void testAtomicCompareAndSet(FastCacheStandaloneClient &client) {
     try {
         Key key = test_base::make_key("atomicCAS1");
         
-        client.atomicCreate(key, nullptr, 200, std::chrono::milliseconds(60000)).get();
-        auto future = client.atomicCompareAndSet(key, nullptr, 200, 400, std::chrono::milliseconds(60000)).get();
+        Value *initVal = test_base::make_value("200");
+        client.createKeyValue(key, nullptr, *initVal).get();
+        delete initVal;
+        
+        auto future = client.atomicCompareAndSet(key, nullptr, 200, 400).get();
         
         std::cout << "PASSED (atomicCompareAndSet returned result=" << future.result 
                   << ", expected=" << future.expected << ")\n";
@@ -394,10 +394,7 @@ void testLockingAtomicContainerValue(FastCacheStandaloneClient &client) {
     testUnlockObject(client);
     
     std::cout << "--- Atomic ---\n";
-    testAtomicLoad(client);
-    testAtomicLoadAndDelete(client);
-    testAtomicCreate(client);
-    testAtomicStore(client);
+    // testAtomicLoad, testAtomicLoadAndDelete, testAtomicCreate, testAtomicStore - нет в standalone_client.hxx
     testAtomicExchange(client);
     testAtomicAdd(client);
     testAtomicSub(client);

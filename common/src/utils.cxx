@@ -8,27 +8,28 @@
 // Proto builders (used by standalone client)
 // =========================================================================
 
-::hurricache::Key buildKeyProto(const Key &key, const KeyHint *hint, int32_t clientId,int32_t defaultCompressionThreshold) {
+::hurricache::Key buildKeyProto(const Key &key, const KeyHint *hint, int32_t clientId,
+                                int32_t defaultCompressionThreshold) {
     ::hurricache::Key proto_key;
     auto *payload = proto_key.mutable_payload();
 
     if (key.size > defaultCompressionThreshold) {
         proto_key.mutable_compressioninfo()->set_enabled(true);
         uint32_t clen;
-        auto compressed = compress(key.data,key.size,&clen);
+        auto compressed = compress(key.data, key.size, &clen);
         proto_key.mutable_compressioninfo()->set_rawsize(key.size);
-        payload->set_allocated_payload(new std::string(compressed,clen));
+        payload->set_allocated_payload(new std::string(compressed, clen));
         payload->set_size(clen);
         delete []compressed;
     } else {
         payload->set_size(key.size);
-        payload->mutable_payload()->assign(key.data,key.size);
+        payload->mutable_payload()->assign(key.data, key.size);
     }
 
     auto effective_hint = hint == nullptr ? calculateKeyHint(key) : hint;
     if (effective_hint != nullptr) {
         auto *key_hint = proto_key.mutable_keyhint();
-        key_hint->set_week_hash(effective_hint->weak_hash);
+        key_hint->set_weak_hash(effective_hint->weak_hash);
         key_hint->set_strong_hash(effective_hint->strong_hash);
     }
     if (hint == nullptr) {
@@ -38,41 +39,59 @@
     return proto_key;
 }
 
-::hurricache::Value buildValueProto(const Value &value, std::chrono::milliseconds ttl, int32_t clientId,int32_t defaultCompressionThreshold) {
+::hurricache::Value buildValueProto(const Value &value, std::chrono::milliseconds ttl, int32_t clientId,
+                                    int32_t defaultCompressionThreshold) {
     ::hurricache::Value proto_value;
     auto *payload = proto_value.mutable_value();
-
-    if (value.size > static_cast<uint64_t>(defaultCompressionThreshold)) {
-        uint32_t clen;
-        char* compressed = compress(value.data, static_cast<uint32_t>(value.size), &clen);
-        if (compressed != nullptr && clen > 0) {
-            proto_value.mutable_compressioninfo()->set_enabled(true);
-            proto_value.mutable_compressioninfo()->set_rawsize(value.size);
-            payload->set_size(clen);
-            payload->set_payload(absl::MakeCordFromExternal(
-                absl::string_view(compressed, static_cast<size_t>(clen)),
-                [compressed](absl::string_view) {
-                    delete[] compressed;
+    switch (value.type) {
+        case BYTES: {
+            proto_value.set_value_type(hurricache::ValueType::BYTES);
+            if (value.size > static_cast<uint64_t>(defaultCompressionThreshold)) {
+                uint32_t clen;
+                char *compressed = compress(value.data, static_cast<uint32_t>(value.size), &clen);
+                if (compressed != nullptr && clen > 0) {
+                    proto_value.mutable_compressioninfo()->set_enabled(true);
+                    proto_value.mutable_compressioninfo()->set_rawsize(value.size);
+                    payload->set_size(clen);
+                    payload->set_payload(absl::MakeCordFromExternal(
+                        absl::string_view(compressed, static_cast<size_t>(clen)),
+                        [compressed](absl::string_view) {
+                            delete[] compressed;
+                        }
+                    ));
+                } else {
+                    // Compression failed, fall back to uncompressed
+                    payload->set_size(static_cast<uint32_t>(value.size));
+                    payload->set_payload(absl::MakeCordFromExternal(
+                        absl::string_view(value.data, static_cast<size_t>(value.size)),
+                        [](absl::string_view) {
+                        }
+                    ));
                 }
-            ));
-        } else {
-            // Compression failed, fall back to uncompressed
-            payload->set_size(static_cast<uint32_t>(value.size));
-            payload->set_payload(absl::MakeCordFromExternal(
-                absl::string_view(value.data, static_cast<size_t>(value.size)),
-                [](absl::string_view) {}
-            ));
-        }
-    } else {
-        payload->set_size(static_cast<uint32_t>(value.size));
-        // For uncompressed data use external value buffer without copying
-        payload->set_payload(absl::MakeCordFromExternal(
-            absl::string_view(value.data, static_cast<size_t>(value.size)),
-            [](absl::string_view) {
-                // value owns memory itself, no need to free here
+            } else {
+                payload->set_size(static_cast<uint32_t>(value.size));
+                // For uncompressed data use external value buffer without copying
+                payload->set_payload(absl::MakeCordFromExternal(
+                    absl::string_view(value.data, static_cast<size_t>(value.size)),
+                    [](absl::string_view) {
+                        // value owns memory itself, no need to free here
+                    }
+                ));
             }
-        ));
+            break;
+        }
+        case INT: {
+            proto_value.set_value_type(hurricache::ValueType::INT);
+            payload->set_intpayload(value.int_value);
+            break;
+        }
+        case DOUBLE: {
+            proto_value.set_value_type(hurricache::ValueType::DOUBLE);
+            payload->set_doublepayload(value.double_value);
+            break;
+        }
     }
+
 
     if (ttl.count() > 0) {
         auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -87,30 +106,17 @@
     return proto_value;
 }
 
-::hurricache::GetRequest buildGetRequestProto(const Key &key, const KeyHint *hint, int32_t clientId,int32_t defaultCompressionThreshold) {
+::hurricache::GetRequest buildGetRequestProto(const Key &key, const KeyHint *hint, int32_t clientId,
+                                              int32_t defaultCompressionThreshold) {
     ::hurricache::GetRequest request;
     auto effective_hint = hint == nullptr ? calculateKeyHint(key) : hint;
-    *request.mutable_key() = buildKeyProto(key, effective_hint, clientId,defaultCompressionThreshold);
+    *request.mutable_key() = buildKeyProto(key, effective_hint, clientId, defaultCompressionThreshold);
     if (hint == nullptr) {
         delete effective_hint;
     }
     return request;
 }
 
-
-::hurricache::AtomicCreate buildAtomicCreateProto(const Key &key, const KeyHint *hint, int32_t clientId,
-                                                  int64_t value, std::chrono::milliseconds ttl) {
-    hurricache::AtomicCreate request;
-    *request.mutable_key() = buildKeyProto(key, hint, clientId);
-    auto *av = request.mutable_val();
-    av->set_val(value);
-    if (ttl.count() > 0) {
-        auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch()).count();
-        request.set_ttl(static_cast<uint64_t>(now_ms) + static_cast<uint64_t>(ttl.count()));
-    }
-    return request;
-}
 
 ::hurricache::ContainerGetRequest buildContainerGetRequestProto(const Key &key, const KeyHint *hint, int32_t clientId,
                                                                 const Key &elementKey) {
@@ -156,9 +162,9 @@ Key *keyRequestToKey(const ::hurricache::Key &request, KeyHint *hint) {
     char *payload = nullptr;
     if (request.has_keyhint()) {
         auto has_strong_hash = request.keyhint().has_strong_hash();
-        auto has_week_hash = request.keyhint().has_week_hash();
+        auto has_weak_hash = request.keyhint().has_weak_hash();
         if (has_strong_hash) _strong_hash = request.keyhint().strong_hash();
-        if (has_week_hash) _weak_hash = request.keyhint().week_hash();
+        if (has_weak_hash) _weak_hash = request.keyhint().weak_hash();
     }
 
     if (request.has_compressioninfo())[[unlikely]] {
@@ -189,9 +195,9 @@ OrderedKey *keyRequestToKey(const ::hurricache::OrderedKey &request, KeyHint *hi
     char *payload = nullptr;
     if (request.has_keyhint()) {
         auto has_strong_hash = request.keyhint().has_strong_hash();
-        auto has_week_hash = request.keyhint().has_week_hash();
+        auto has_weak_hash = request.keyhint().has_weak_hash();
         if (has_strong_hash) _strong_hash = request.keyhint().strong_hash();
-        if (has_week_hash) _weak_hash = request.keyhint().week_hash();
+        if (has_weak_hash) _weak_hash = request.keyhint().weak_hash();
     }
 
     // Validate payload consistency — prevent out-of-bounds reads on malformed data
@@ -222,91 +228,103 @@ OrderedKey *keyRequestToKey(const ::hurricache::OrderedKey &request, KeyHint *hi
 
 
 OrderedValuePtr valueRequestToOrderedValue(const ::hurricache::OrderedValue &request) {
-    uint32_t _rawSize = 0;
-    bool compressed = false;
-    if (request.has_compressioninfo()) {
-        compressed = request.compressioninfo().enabled();
-        _rawSize = request.compressioninfo().rawsize();
-    }
-
-    const auto &payload = request.value().payload();
-    auto _size = payload.size();
-
     uint64_t order = 0;
     if (request.has_order()) {
         order = request.order();
     }
-
-    char *buff = nullptr;
-    bool success = false;
-
-    // Check if Cord is flat (consists of exactly one chunk of the required size)
-    auto chunks = payload.Chunks();
-    auto it = chunks.begin();
-    bool is_flat = false;
-    const char *flat_data = nullptr;
-
-    if (it != chunks.end()) {
-        const auto &first_chunk = *it;
-        auto next_it = it;
-        ++next_it;
-        if (next_it == chunks.end() && first_chunk.size() == _size) {
-            is_flat = true;
-            flat_data = static_cast<const char *>(first_chunk.data());
-        }
-    }
-
-    if (compressed && is_flat) {
-        char *raw = decompress(flat_data, _size, _rawSize);
-        if (raw != nullptr) {
-            _size = _rawSize;
-            buff = raw;
-            success = true;
-        } else {
-            return nullptr;
-        }
-    } else {
-        buff = new char[_size];
-        char *write_ptr = buff;
-        size_t real_size = 0;
-
-        if (is_flat && !compressed) {
-            memcpy(buff, flat_data, _size);
-            real_size = _size;
-        } else {
-            for (const auto &chunk: chunks) {
-                size_t chunk_size = chunk.size();
-                memcpy(write_ptr, chunk.data(), chunk_size);
-                write_ptr += chunk_size;
-                real_size += chunk_size;
+    switch (request.value_type()) {
+        case ::hurricache::ValueType::BYTES: {
+            uint32_t _rawSize = 0;
+            bool compressed = false;
+            if (request.has_compressioninfo()) {
+                compressed = request.compressioninfo().enabled();
+                _rawSize = request.compressioninfo().rawsize();
             }
-        }
 
-        if (real_size == _size) [[likely]] {
-            if (compressed) {
-                char *raw = decompress(buff, _size, _rawSize);
+            const auto &payload = request.value().payload();
+            auto _size = payload.size();
+
+            char *buff = nullptr;
+            bool success = false;
+
+            // Check if Cord is flat (consists of exactly one chunk of the required size)
+            auto chunks = payload.Chunks();
+            auto it = chunks.begin();
+            bool is_flat = false;
+            const char *flat_data = nullptr;
+
+            if (it != chunks.end()) {
+                const auto &first_chunk = *it;
+                auto next_it = it;
+                ++next_it;
+                if (next_it == chunks.end() && first_chunk.size() == _size) {
+                    is_flat = true;
+                    flat_data = static_cast<const char *>(first_chunk.data());
+                }
+            }
+
+            if (compressed && is_flat) {
+                char *raw = decompress(flat_data, _size, _rawSize);
                 if (raw != nullptr) {
-                    delete []buff;
                     _size = _rawSize;
                     buff = raw;
+                    success = true;
+                } else {
+                    return nullptr;
+                }
+            } else {
+                buff = new char[_size];
+                char *write_ptr = buff;
+                size_t real_size = 0;
+
+                if (is_flat && !compressed) {
+                    memcpy(buff, flat_data, _size);
+                    real_size = _size;
+                } else {
+                    for (const auto &chunk: chunks) {
+                        size_t chunk_size = chunk.size();
+                        memcpy(write_ptr, chunk.data(), chunk_size);
+                        write_ptr += chunk_size;
+                        real_size += chunk_size;
+                    }
+                }
+
+                if (real_size == _size) [[likely]] {
+                    if (compressed) {
+                        char *raw = decompress(buff, _size, _rawSize);
+                        if (raw != nullptr) {
+                            delete []buff;
+                            _size = _rawSize;
+                            buff = raw;
+                        } else {
+                            delete []buff;
+                            return nullptr;
+                        }
+                    }
+                    success = (buff != nullptr);
                 } else {
                     delete []buff;
                     return nullptr;
                 }
             }
-            success = (buff != nullptr);
-        } else {
-            delete []buff;
-            return nullptr;
-        }
-    }
 
-    if (success && buff != nullptr) [[likely]] {
-        auto val = new OrderedValue();
-        val->weight = order;
-        val->size = _size;
-        val->data = buff;
-        return val;
+            if (success && buff != nullptr) [[likely]] {
+                auto val = new OrderedValue();
+                val->weight = order;
+                val->size = _size;
+                val->data = buff;
+                return val;
+            }
+        }
+
+        case ::hurricache::ValueType::INT: {
+            auto int_val = request.value().intpayload();
+            return new OrderedValue(order, int_val);
+        }
+        case ::hurricache::ValueType::DOUBLE: {
+            auto double_val = request.value().doublepayload();
+            return new OrderedValue(order, double_val);
+        }
     }
 
     return nullptr;
@@ -314,85 +332,100 @@ OrderedValuePtr valueRequestToOrderedValue(const ::hurricache::OrderedValue &req
 
 
 ValuePtr valueRequestToValue(const ::hurricache::Value &request) {
-    uint32_t _rawSize = 0;
-    bool compressed = false;
-    if (request.has_compressioninfo()) {
-        compressed = request.compressioninfo().enabled();
-        _rawSize = request.compressioninfo().rawsize();
-    }
-
-    const auto &payload = request.value().payload();
-    auto _size = payload.size();
 
 
-    char *buff = nullptr;
-    bool success = false;
-
-    auto chunks = payload.Chunks();
-    auto it = chunks.begin();
-    bool is_flat = false;
-    const char *flat_data = nullptr;
-
-    if (it != chunks.end()) {
-        const auto &first_chunk = *it;
-        auto next_it = it;
-        ++next_it;
-        if (next_it == chunks.end() && first_chunk.size() == _size) {
-            is_flat = true;
-            flat_data = static_cast<const char *>(first_chunk.data());
-        }
-    }
-
-    if (compressed && is_flat) {
-        char *raw = decompress(flat_data, _size, _rawSize);
-        if (raw != nullptr) {
-            _size = _rawSize;
-            buff = raw;
-            success = true;
-        } else {
-            return nullptr;
-        }
-    } else {
-        buff = new char [_size];
-        char *write_ptr = buff;
-        size_t real_size = 0;
-
-        if (is_flat && !compressed) {
-            memcpy(buff, flat_data, _size);
-            real_size = _size;
-        } else {
-            for (const auto &chunk: chunks) {
-                std::size_t chunk_size = chunk.size();
-                memcpy(write_ptr, chunk.data(), chunk_size);
-                real_size += chunk_size;
-                write_ptr += chunk_size;
+    switch (request.value_type()) {
+        case ::hurricache::ValueType::BYTES: {
+            uint32_t _rawSize = 0;
+            bool compressed = false;
+            if (request.has_compressioninfo()) {
+                compressed = request.compressioninfo().enabled();
+                _rawSize = request.compressioninfo().rawsize();
             }
-        }
 
-        if (real_size == _size) [[likely]] {
-            if (compressed) {
-                char *raw = decompress(buff, _size, _rawSize);
+            const auto &payload = request.value().payload();
+            auto _size = payload.size();
+
+            char *buff = nullptr;
+            bool success = false;
+
+            // Check if Cord is flat (consists of exactly one chunk of the required size)
+            auto chunks = payload.Chunks();
+            auto it = chunks.begin();
+            bool is_flat = false;
+            const char *flat_data = nullptr;
+
+            if (it != chunks.end()) {
+                const auto &first_chunk = *it;
+                auto next_it = it;
+                ++next_it;
+                if (next_it == chunks.end() && first_chunk.size() == _size) {
+                    is_flat = true;
+                    flat_data = static_cast<const char *>(first_chunk.data());
+                }
+            }
+
+            if (compressed && is_flat) {
+                char *raw = decompress(flat_data, _size, _rawSize);
                 if (raw != nullptr) {
-                    delete []buff;
                     _size = _rawSize;
                     buff = raw;
+                    success = true;
+                } else {
+                    return nullptr;
+                }
+            } else {
+                buff = new char[_size];
+                char *write_ptr = buff;
+                size_t real_size = 0;
+
+                if (is_flat && !compressed) {
+                    memcpy(buff, flat_data, _size);
+                    real_size = _size;
+                } else {
+                    for (const auto &chunk: chunks) {
+                        size_t chunk_size = chunk.size();
+                        memcpy(write_ptr, chunk.data(), chunk_size);
+                        write_ptr += chunk_size;
+                        real_size += chunk_size;
+                    }
+                }
+
+                if (real_size == _size) [[likely]] {
+                    if (compressed) {
+                        char *raw = decompress(buff, _size, _rawSize);
+                        if (raw != nullptr) {
+                            delete []buff;
+                            _size = _rawSize;
+                            buff = raw;
+                        } else {
+                            delete []buff;
+                            return nullptr;
+                        }
+                    }
+                    success = (buff != nullptr);
                 } else {
                     delete []buff;
                     return nullptr;
                 }
             }
-            success = (buff != nullptr);
-        } else {
-            delete []buff;
-            return nullptr;
-        }
-    }
 
-    if (success && buff != nullptr) [[likely]] {
-        auto val = new Value();
-        val->data = buff;
-        val->size = _size;
-        return val;
+            if (success && buff != nullptr) [[likely]] {
+                auto val = new OrderedValue();
+                val->size = _size;
+                val->data = buff;
+                return val;
+            }
+        }
+
+        case ::hurricache::ValueType::INT: {
+            auto int_val = request.value().intpayload();
+            return new Value(int_val);
+        }
+        case ::hurricache::ValueType::DOUBLE: {
+            auto double_val = request.value().doublepayload();
+            return new Value( double_val);
+        }
     }
 
     return nullptr;
@@ -424,7 +457,8 @@ hurricache::CreateContainerRequest buildContainerRequest(
             if (v != nullptr) {
                 // Use buildValueProto with compression and threshold support
                 // (pass zero ttl for container elements if lifetime is set at container level)
-                *request.add_value_unordered() = buildValueProto(*v, std::chrono::milliseconds(0), clientId,defaultCompressionThreshold);
+                *request.add_value_unordered() = buildValueProto(*v, std::chrono::milliseconds(0), clientId,
+                                                                 defaultCompressionThreshold);
             }
         }
     }
@@ -459,7 +493,7 @@ hurricache::CreateContainerRequest buildContainerRequestOrdered(
             if (val->size > static_cast<uint64_t>(defaultCompressionThreshold)) {
                 ordered_val->mutable_compressioninfo()->set_enabled(true);
                 uint32_t clen;
-                char* compressed = compress(val->data, static_cast<uint32_t>(val->size), &clen);
+                char *compressed = compress(val->data, static_cast<uint32_t>(val->size), &clen);
                 ordered_val->mutable_compressioninfo()->set_rawsize(val->size);
 
                 ov_val->set_size(clen);

@@ -50,14 +50,24 @@ struct Key {
     }
 };
 std::ostream &operator<<(std::ostream &os, const Key &obj);
+enum ValueType {
+    INT,DOUBLE,BYTES
+};
 
 struct Value {
     uint64_t size;
-    char *data;
+    ValueType type;
+    union {
+        char *data;
+        int64_t int_value;
+        double double_value;
+    };
 
     Value();
 
     Value(const char *src_data, uint64_t src_size);
+    Value(const int64_t src_int);
+    Value(const double src_double);
 
     Value(Value &&other) noexcept;
 
@@ -66,8 +76,18 @@ struct Value {
     Value& operator=(const Value &) = delete;
 
     friend bool operator==(const Value &lhs, const Value &rhs) {
-        return lhs.size == rhs.size
-            && memcmp (lhs.data, rhs.data,lhs.size) == 0;
+        if (lhs.type != rhs.type) return false;
+        if (lhs.size != rhs.size) return false;
+        switch (lhs.type) {
+            case INT:
+                return lhs.int_value == rhs.int_value;
+            case DOUBLE:
+                return lhs.double_value == rhs.double_value;
+            case BYTES:
+                if (lhs.size == 0) return true;
+                return memcmp(lhs.data, rhs.data, lhs.size) == 0;
+        }
+        return false;
     }
 
     friend bool operator!=(const Value &lhs, const Value &rhs) {

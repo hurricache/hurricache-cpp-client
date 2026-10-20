@@ -94,7 +94,7 @@ target_include_directories(comprehensive_test PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(comprehensive_test PRIVATE hurricache_standalone_client hurricache_common gRPC::grpc++ protobuf::libprotobuf)
+target_link_libraries(comprehensive_test PRIVATE hurricache_smart_client hurricache_standalone_client hurricache_common gRPC::grpc++ protobuf::libprotobuf)
 
 
 add_executable(raw_stress_test
@@ -106,4 +106,12 @@ target_include_directories(raw_stress_test PUBLIC
 )
 target_link_libraries(raw_stress_test PRIVATE hurricache_standalone_client hurricache_common gRPC::grpc++ protobuf::libprotobuf)
 
+add_executable(raw_stress_test_cluster
+        src/raw_stress_cluster.cxx
+)
+target_include_directories(raw_stress_test_cluster PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(raw_stress_test_cluster PRIVATE hurricache_smart_client hurricache_standalone_client hurricache_common gRPC::grpc++ protobuf::libprotobuf)
 

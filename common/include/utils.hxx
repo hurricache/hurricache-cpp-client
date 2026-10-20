@@ -24,9 +24,6 @@ inline KeyHint *calculateKeyHint(const Key &key) {
 
 ::hurricache::Value buildValueProto(const Value &value, std::chrono::milliseconds ttl, int32_t clientId,int32_t defaultCompressionThreshold=1024);
 
-::hurricache::AtomicCreate buildAtomicCreateProto(const Key &key, const KeyHint *hint, int32_t clientId,
-                                                  int64_t value, std::chrono::milliseconds ttl);
-
 ::hurricache::ContainerGetRequest buildContainerGetRequestProto(const Key &key, const KeyHint *hint,
                                                                 int32_t clientId,
                                                                 const Key &elementKey);
@@ -59,8 +56,7 @@ struct RpcCallDataBase {
 };
 
 template
-<
-    typename ResponseType, typename ResultType>
+<typename ResponseType, typename ResultType>
 struct RpcCallData : public RpcCallDataBase {
     std::promise<ResultType> promise;
     ResponseType response;

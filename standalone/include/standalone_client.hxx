@@ -267,20 +267,20 @@ public:
                                                                       std::chrono::milliseconds timeout =
                                                                               std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<bool> removeTail(const Key &key, const KeyHint *hint,
+    [[nodiscard]] std::future<uint32_t> removeTail(const Key &key, const KeyHint *hint,
                                                int32_t clientId = 0,
                                                std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<bool> removeHead(const Key &key, const KeyHint *hint,
+    [[nodiscard]] std::future<uint32_t> removeHead(const Key &key, const KeyHint *hint,
                                                int32_t clientId = 0,
                                                std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<bool> removeElementAtPosition(const Key &key, const KeyHint *hint, uint64_t pos,
+    [[nodiscard]] std::future<uint32_t> removeElementAtPosition(const Key &key, const KeyHint *hint, uint64_t pos,
                                                             uint64_t endPos, int32_t clientId = 0,
                                                             std::chrono::milliseconds timeout =
                                                                     std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<uint32_t> removeFromContainer(const Key &key, const KeyHint *hint, ContainerType type,
+    [[nodiscard]] std::future<uint32_t> removeFromContainer(const Key &key, const KeyHint *hint,
                                                            const std::vector<KeyPtr> *keys,
                                                            const std::vector<ValuePtr> *values,
                                                            int32_t clientId = 0,
@@ -304,59 +304,51 @@ public:
     // =========================================================================
     // ATOMIC OPERATIONS
     // =========================================================================
-    [[nodiscard]] std::future<int64_t> atomicLoad(const Key &key, const KeyHint *hint = nullptr,
-                                                  int32_t clientId = 0,
-                                                  std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int64_t> atomicLoadAndDelete(const Key &key, const KeyHint *hint= nullptr,
-                                                           int32_t clientId = 0,
-                                                           std::chrono::milliseconds timeout =
-                                                                   std::chrono::milliseconds(0));
-
-    [[nodiscard]] std::future<KeyHint> atomicCreate(const Key &key, const KeyHint *hint, int64_t value,
-                                                    std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
-                                                    int32_t clientId = 0,
-                                                    std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
-
-    [[nodiscard]] std::future<KeyHint> atomicStore(const Key &key, const KeyHint *hint, int64_t value,
-                                                   std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
-                                                   int32_t clientId = 0,
-                                                   std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
-
-    [[nodiscard]] std::future<int64_t> atomicExchange(const Key &key, const KeyHint *hint, int64_t value,
+    [[nodiscard]] std::future<ValuePtr> atomicExchange(const Key &key, const KeyHint *hint, int64_t value,
                                                       std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
                                                       int32_t clientId = 0,
                                                       std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int64_t> atomicAdd(const Key &key, const KeyHint *hint, int64_t delta,
+    [[nodiscard]] std::future<ValuePtr> atomicAdd(const Key &key, const KeyHint *hint, int64_t delta,
                                                  std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
                                                  int32_t clientId = 0,
                                                  std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int64_t> atomicSub(const Key &key, const KeyHint *hint, int64_t delta,
+    [[nodiscard]] std::future<ValuePtr> atomicSub(const Key &key, const KeyHint *hint, int64_t delta,
                                                  std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
                                                  int32_t clientId = 0,
                                                  std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int64_t> atomicAnd(const Key &key, const KeyHint *hint, int64_t mask,
+    [[nodiscard]] std::future<ValuePtr> atomicAdd(const Key &key, const KeyHint *hint, double delta,
                                                  std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
                                                  int32_t clientId = 0,
                                                  std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int64_t> atomicOr(const Key &key, const KeyHint *hint, int64_t mask,
+    [[nodiscard]] std::future<ValuePtr> atomicSub(const Key &key, const KeyHint *hint, double delta,
+                                                 std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                 int32_t clientId = 0,
+                                                 std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+
+    [[nodiscard]] std::future<ValuePtr> atomicAnd(const Key &key, const KeyHint *hint, int64_t mask,
+                                                 std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                 int32_t clientId = 0,
+                                                 std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicOr(const Key &key, const KeyHint *hint, int64_t mask,
                                                 std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
                                                 int32_t clientId = 0,
                                                 std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    [[nodiscard]] std::future<int64_t> atomicXor(const Key &key, const KeyHint *hint, int64_t mask,
+    [[nodiscard]] std::future<ValuePtr> atomicXor(const Key &key, const KeyHint *hint, int64_t mask,
                                                  std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
                                                  int32_t clientId = 0,
                                                  std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
     [[nodiscard]] std::future<AtomicCasRes> atomicCompareAndSet(const Key &key, const KeyHint *hint,
                                                                 int64_t expectedValue, int64_t newValue,
-                                                                std::chrono::milliseconds ttl =
-                                                                        std::chrono::milliseconds(0),
+                                                                std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
                                                                 int32_t clientId = 0,
                                                                 std::chrono::milliseconds timeout =
                                                                         std::chrono::milliseconds(0));
