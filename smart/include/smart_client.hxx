@@ -8,12 +8,23 @@
 #include <memory>
 #include <atomic>
 #include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <functional>
 
 #include "types.hxx"
 #include "standalone_client.hxx"
 #include "coordinator_client.hxx"
 #include "routing_table.hxx"
 #include "channel_config.hxx"
+
+// Routing mode (analog of com.hurricache.client.intf.Mode)
+enum class Mode {
+    MASTER,
+    BACKUP,
+    MASTER_THAN_BACKUP,
+    LB_SMART
+};
 
 class FastCacheSmartClient {
 public:
@@ -30,6 +41,11 @@ public:
 
     [[nodiscard]] std::chrono::milliseconds getDefaultTimeout() const;
     [[nodiscard]] int32_t getDefaultCompressionThreshold() const;
+    [[nodiscard]] bool isReady() const { return is_ready_.load(); }
+
+    // Routing mode override (per client; default MASTER_THAN_BACKUP)
+    FastCacheSmartClient &setMode(Mode mode);
+    FastCacheSmartClient &clearModeOverride();
 
     // =========================================================================
     // TTL MANAGEMENT
@@ -358,29 +374,65 @@ public:
     ~FastCacheSmartClient();
 
 private:
-    // Core routing method
-    template<typename T>
-    std::future<T> execute(
-        const KeyHint *hint,
-        std::function<std::future<T>(std::shared_ptr<FastCacheStandaloneClient>)> action);
+    using SharedClient = std::shared_ptr<FastCacheStandaloneClient>;
+    using SharedKey = std::shared_ptr<Key>;
+    using SharedHint = std::shared_ptr<KeyHint>;
 
-    // Failover
+    // Core routing: picks shard by hint (or random), applies Mode, runs action
+    // with reroute/failover guard. Completion is delivered via a worker thread,
+    // because std::future has no continuations.
     template<typename T>
-    std::future<T> failover(
-        std::future<T> future,
-        std::shared_ptr<FastCacheStandaloneClient> primary,
-        std::shared_ptr<FastCacheStandaloneClient> fallback);
+    std::future<T> execute(SharedHint hint,
+                           std::function<std::future<T>(SharedClient)> action);
 
-    // Coordinator refresh
+    // Java fallbackGuard: FAILED_PRECONDITION -> reroute via x-fastcache-route,
+    // UNAVAILABLE -> topology refresh + retry on fallback endpoint.
+    template<typename T>
+    T attemptWithGuard(int shard,
+                       const std::function<std::future<T>(SharedClient)> &action,
+                       SharedClient current, SharedClient fallback);
+
+    [[nodiscard]] Mode effectiveMode() const;
+    void waitReady();
     void refreshRouting();
+    void triggerAsyncRefresh();
+
+    // Chunked container creation: create with first chunk, repDelay, then
+    // sequentially push remaining chunks addressed by the returned KeyHint.
+    std::future<KeyHint> createWithRemainder(
+        std::future<KeyHint> create_future,
+        std::function<void(std::shared_ptr<KeyHint>)> remainder_sender);
+
+    // Sequential chunked additions with result summation.
+    std::future<uint32_t> runAddPipeline(
+        std::vector<std::function<std::future<uint32_t>()> > chunk_calls);
+
+    std::future<KeyHint> createUnorderedContainerSmart(
+        const Key &key, const KeyHint *hint, const std::vector<ValuePtr> *initialValue,
+        std::chrono::milliseconds ttl, int32_t clientId, std::chrono::milliseconds timeout,
+        ContainerType type);
+
+    [[nodiscard]] int64_t maxRpcSize() const;
+    [[nodiscard]] int32_t effectiveClientId(int32_t clientId) const;
+    [[nodiscard]] std::chrono::milliseconds effectiveTtl(std::chrono::milliseconds ttl) const;
 
     std::vector<std::string> coordinator_addresses_;
     std::unique_ptr<CoordinatorClient> coordinator_client_;
     std::unique_ptr<RoutingTable> routing_table_;
     std::chrono::milliseconds timeout_;
+    std::chrono::milliseconds default_ttl_;
+    int32_t default_client_id_;
     int32_t compression_threshold_;
     ChannelConfig channel_config_;
+    Mode configured_mode_ = Mode::MASTER_THAN_BACKUP;
+    std::atomic<int> mode_override_{-1}; // -1 = no override
     std::atomic<bool> is_ready_{false};
+    std::atomic<bool> is_updating_{false};
     std::atomic<bool> shutdown_requested_{false};
+    std::atomic<uint32_t> random_counter_{0};
+    std::atomic<int32_t> active_coordinator_index_{0};
+    std::mutex ready_mutex_;
+    std::condition_variable ready_cv_;
+    std::chrono::milliseconds ready_timeout_{60000};
     std::jthread refresh_thread_;
 };

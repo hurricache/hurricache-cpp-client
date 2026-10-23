@@ -333,8 +333,26 @@ OrderedValuePtr valueRequestToOrderedValue(const ::hurricache::OrderedValue &req
 
 ValuePtr valueRequestToValue(const ::hurricache::Value &request) {
 
+    // Server may omit value_type (e.g. updateValue/atomicAdd responses);
+    // infer the type from the BinaryPayload oneof in that case.
+    auto type = request.value_type();
+    if (type == ::hurricache::ValueType::AUTO) {
+        switch (request.value().data_case()) {
+            case ::hurricache::BinaryPayload::kIntPayload:
+                type = ::hurricache::ValueType::INT;
+                break;
+            case ::hurricache::BinaryPayload::kDoublePayload:
+                type = ::hurricache::ValueType::DOUBLE;
+                break;
+            case ::hurricache::BinaryPayload::kPayload:
+                type = ::hurricache::ValueType::BYTES;
+                break;
+            default:
+                return nullptr;
+        }
+    }
 
-    switch (request.value_type()) {
+    switch (type) {
         case ::hurricache::ValueType::BYTES: {
             uint32_t _rawSize = 0;
             bool compressed = false;
@@ -411,7 +429,7 @@ ValuePtr valueRequestToValue(const ::hurricache::Value &request) {
             }
 
             if (success && buff != nullptr) [[likely]] {
-                auto val = new OrderedValue();
+                auto val = new Value();
                 val->size = _size;
                 val->data = buff;
                 return val;

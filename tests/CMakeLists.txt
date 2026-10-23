@@ -115,3 +115,12 @@ target_include_directories(raw_stress_test_cluster PUBLIC
 )
 target_link_libraries(raw_stress_test_cluster PRIVATE hurricache_smart_client hurricache_standalone_client hurricache_common gRPC::grpc++ protobuf::libprotobuf)
 
+add_executable(smart_smoke_test
+        src/smart_smoke_test.cxx
+)
+target_include_directories(smart_smoke_test PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(smart_smoke_test PRIVATE hurricache_smart_client hurricache_standalone_client hurricache_common gRPC::grpc++ protobuf::libprotobuf)
+

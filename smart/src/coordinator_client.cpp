@@ -1,6 +1,10 @@
 #include <coordinator_client.hxx>
 #include <grpcpp/create_channel.h>
-#include <thread>
+#include "utils.hxx"
+
+CoordinatorClient::CoordinatorClient() {
+    cq_thread_ = std::jthread([this] { RunCompletionQueue(); });
+}
 
 CoordinatorClient::~CoordinatorClient() {
     shutdown();
@@ -11,8 +15,43 @@ void CoordinatorClient::shutdown() {
     if (!shutdown_.compare_exchange_strong(expected, true)) {
         return;
     }
-    channel_.reset();
+    {
+        std::lock_guard<std::mutex> lock(channel_mutex_);
+        stub_.reset();
+        channel_.reset();
+        active_target_.clear();
+    }
+    cq_.Shutdown();
+    if (cq_thread_.joinable()) {
+        cq_thread_.join();
+    }
+}
+
+std::string CoordinatorClient::getActiveTarget() const {
+    std::lock_guard<std::mutex> lock(channel_mutex_);
+    return active_target_;
+}
+
+void CoordinatorClient::RunCompletionQueue() {
+    void *tag = nullptr;
+    bool ok = false;
+    while (cq_.Next(&tag, &ok)) {
+        auto *call_data = static_cast<RoutingStreamCallData *>(tag);
+        call_data->Proceed(ok);
+    }
+}
+
+std::shared_ptr<coordinator::CoordinatorService::Stub> CoordinatorClient::ensureStub(const std::string& target) {
+    std::lock_guard<std::mutex> lock(channel_mutex_);
+    if (stub_ && active_target_ == target) {
+        return stub_;
+    }
     stub_.reset();
+    channel_.reset();
+    channel_ = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
+    stub_ = coordinator::CoordinatorService::NewStub(channel_);
+    active_target_ = target;
+    return stub_;
 }
 
 void CoordinatorClient::RoutingStreamCallData::Proceed(bool ok) {
@@ -57,35 +96,37 @@ void CoordinatorClient::RoutingStreamCallData::Proceed(bool ok) {
             }
             promise.set_value(accumulated_result);
         } else {
-            std::string err_msg = "Coordinator stream failed. Code: " + std::to_string(status.error_code()) +
-                                  ", Message: " + status.error_message();
-            promise.set_exception(std::make_exception_ptr(std::runtime_error(err_msg)));
+            promise.set_exception(std::make_exception_ptr(
+                GrpcStatusException(status.error_code(), status.error_message())));
         }
         delete this;
     }
 }
 
 std::future<std::shared_ptr<CoordinatorRoutingInfo>> CoordinatorClient::provideGlobalRoutingInfo(
-    const std::string& host,
-    int32_t port,
+    const std::string& target,
     std::chrono::milliseconds timeout) {
-    
-    std::string target = host + ":" + std::to_string(port);
-    channel_ = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
-    stub_ = coordinator::CoordinatorService::NewStub(channel_);
-    
+
+    if (shutdown_.load()) {
+        std::promise<std::shared_ptr<CoordinatorRoutingInfo>> p;
+        p.set_exception(std::make_exception_ptr(
+            std::runtime_error("CoordinatorClient is shut down")));
+        return p.get_future();
+    }
+
+    auto stub = ensureStub(target);
+
     auto *call = new RoutingStreamCallData();
     call->accumulated_result = nullptr;
-    
-    std::chrono::milliseconds effectiveTimeout = timeout;
-    if (effectiveTimeout.count() > 0) {
-        call->context.set_deadline(std::chrono::system_clock::now() + effectiveTimeout);
+    std::future<std::shared_ptr<CoordinatorRoutingInfo>> future = call->promise.get_future();
+
+    if (timeout.count() > 0) {
+        call->context.set_deadline(std::chrono::system_clock::now() + timeout);
     }
-    
+
     coordinator::Void request;
-    call->reader = stub_->PrepareAsyncprovideGlobalRoutingInfo(&call->context, request, &cq_);
-    
+    call->reader = stub->PrepareAsyncprovideGlobalRoutingInfo(&call->context, request, &cq_);
     call->reader->StartCall(call);
-    
-    return call->promise.get_future();
+
+    return future;
 }

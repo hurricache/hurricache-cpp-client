@@ -2,24 +2,10 @@ if(TARGET gRPC::grpc++ OR TARGET grpc++)
     return()
 endif()
 
-# -----------------------------------------------------------------------------
-# 1. Global build options and LTO
-# -----------------------------------------------------------------------------
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Force static libraries" FORCE)
 set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "Force static protobuf" FORCE)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "Force PIC" FORCE)
 
-# Enable Interprocedural Optimization (LTO) for all subprojects
-#set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON CACHE BOOL "Enable LTO globally" FORCE)
-#set(gRPC_ENABLE_INTERPROCEDURAL_OPTIMIZATION ON CACHE BOOL "Enable LTO for gRPC" FORCE)
-
-# Force optimization flags for Release build of gRPC / Abseil / Protobuf
-#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native -mno-avx512f -flto=auto -fno-semantic-interposition" CACHE STRING "" FORCE)
-#set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -march=native -mno-avx512f -flto=auto -fno-semantic-interposition" CACHE STRING "" FORCE)
-
-# CRITICAL FIX:
-# Enable installation/export for Abseil so its targets are available for Protobuf export set.
-# Thanks to EXCLUDE_FROM_ALL these files will NOT be physically installed to the system.
 set(ABSL_ENABLE_INSTALL ON CACHE BOOL "" FORCE)
 
 # Disable installation for other libraries

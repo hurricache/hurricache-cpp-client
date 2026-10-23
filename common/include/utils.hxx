@@ -8,7 +8,40 @@
 #include <cache.grpc.pb.h>
 #include <future>
 #include <chrono>
+#include <stdexcept>
+#include <string>
 #include "hashes.hxx"
+
+// gRPC error that preserves the status code and the x-fastcache-route trailer,
+// so smart/failover logic can react to UNAVAILABLE and FAILED_PRECONDITION.
+class GrpcStatusException : public std::runtime_error {
+public:
+    GrpcStatusException(grpc::StatusCode code, std::string message, std::string route_trailer = {})
+        : std::runtime_error("gRPC call failed. Code: " + std::to_string(code) +
+                             ", Message: " + message),
+          code_(code),
+          message_(std::move(message)),
+          route_trailer_(std::move(route_trailer)) {}
+
+    [[nodiscard]] grpc::StatusCode code() const { return code_; }
+    [[nodiscard]] const std::string &statusMessage() const { return message_; }
+    [[nodiscard]] const std::string &routeTrailer() const { return route_trailer_; }
+
+private:
+    grpc::StatusCode code_;
+    std::string message_;
+    std::string route_trailer_;
+};
+
+inline std::string extractRouteTrailer(const grpc::ClientContext &context) {
+    static const std::string kRouteKey = "x-fastcache-route";
+    const auto &trailers = context.GetServerTrailingMetadata();
+    auto range = trailers.equal_range(kRouteKey);
+    for (auto it = range.first; it != range.second; ++it) {
+        return std::string(it->second.data(), it->second.size());
+    }
+    return {};
+}
 
 inline KeyHint *calculateKeyHint(const Key &key) {
     if (key.data && key.size > 0) {
@@ -80,9 +113,9 @@ struct RpcCallData : public RpcCallDataBase {
                 promise.set_exception(std::current_exception());
             }
         } else {
-            std::string err_msg = "gRPC call failed. Code: " + std::to_string(status.error_code()) +
-                                  ", Message: " + status.error_message();
-            promise.set_exception(std::make_exception_ptr(std::runtime_error(err_msg)));
+            promise.set_exception(std::make_exception_ptr(
+                GrpcStatusException(status.error_code(), status.error_message(),
+                                    extractRouteTrailer(context))));
         }
         delete this;
     }
@@ -138,9 +171,9 @@ struct StreamCallData : public RpcCallDataBase {
             if (status.ok()) {
                 promise.set_value(std::move(accumulated_result));
             } else {
-                std::string err_msg = "gRPC stream failed. Code: " + std::to_string(status.error_code()) +
-                                      ", Message: " + status.error_message();
-                promise.set_exception(std::make_exception_ptr(std::runtime_error(err_msg)));
+                promise.set_exception(std::make_exception_ptr(
+                    GrpcStatusException(status.error_code(), status.error_message(),
+                                        extractRouteTrailer(context))));
             }
             delete this;
         }
