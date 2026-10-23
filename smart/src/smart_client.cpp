@@ -1695,6 +1695,18 @@ std::future<uint32_t> FastCacheSmartClient::removeFromContainer(const Key &key, 
     });
 }
 
+std::future<uint32_t> FastCacheSmartClient::removeFromContainer(const Key &key, const KeyHint *hint,
+                                                                const std::vector<KeyPtr> *keys,
+                                                                const std::vector<ValuePtr> *values,
+                                                                int32_t clientId, std::chrono::milliseconds timeout) {
+    auto key_copy = copyKey(key);
+    auto hint_copy = resolveHint(key, hint);
+    const int32_t cid = effectiveClientId(clientId);
+    return execute<uint32_t>(hint_copy, [key_copy, hint_copy, keys, values, cid, timeout](SharedClient c) {
+        return c->removeFromContainer(*key_copy, hint_copy.get(), keys, values, cid, timeout);
+    });
+}
+
 std::future<uint32_t> FastCacheSmartClient::addElementHashMap(const Key &key, const KeyHint *hint,
                                                               const std::vector<KeyPtr> *container_keys,
                                                               const std::vector<ValuePtr> *container_values,

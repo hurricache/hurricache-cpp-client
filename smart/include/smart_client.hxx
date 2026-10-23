@@ -354,6 +354,12 @@ public:
                                                            int32_t clientId = 0,
                                                            std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
+    [[nodiscard]] std::future<uint32_t> removeFromContainer(const Key &key, const KeyHint *hint,
+                                                            const std::vector<KeyPtr> *keys,
+                                                            const std::vector<ValuePtr> *values = nullptr,
+                                                            int32_t clientId = 0,
+                                                            std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
     [[nodiscard]] std::future<uint32_t> addElementHashMap(const Key &key, const KeyHint *hint,
                                                          const std::vector<KeyPtr> *container_keys = nullptr,
                                                          const std::vector<ValuePtr> *container_values = nullptr,
