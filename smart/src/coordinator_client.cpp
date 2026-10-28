@@ -1,5 +1,7 @@
 #include <coordinator_client.hxx>
 #include <grpcpp/create_channel.h>
+
+#include "routing_table.hxx"
 #include "utils.hxx"
 
 CoordinatorClient::CoordinatorClient() {
@@ -75,7 +77,8 @@ void CoordinatorClient::RoutingStreamCallData::Proceed(bool ok) {
             }
             for (const auto& peer : current_chunk.peerrouting()) {
                 CoordinatorRoutingInfo::PeerInfo info;
-                info.target = peer.target();
+                info.target = peer.target().ip();
+                info.port = peer.target().port();
                 info.role = peer.role();
                 for (const auto& partition_id : peer.partitionids()) {
                     info.partition_ids.push_back(partition_id);

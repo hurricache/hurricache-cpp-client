@@ -2,6 +2,10 @@
 #include <iostream>
 #include <grpcpp/create_channel.h>
 
+std::string convert (const coordinator::Endpoint& ep ) {
+    return ep.ip() + ":" + std::to_string(ep.port());
+}
+
 void RoutingTable::updateFromCoordinator(
     int32_t max_shards,
     const std::vector<coordinator::PeerRouting>& peer_routings,
@@ -18,7 +22,7 @@ void RoutingTable::updateFromCoordinator(
         // Collect new targets
         std::set<std::string> new_targets;
         for (const auto& peer : peer_routings) {
-            new_targets.insert(peer.target());
+            new_targets.insert(convert(peer.target()));
         }
 
         // Create new clients for new targets
@@ -44,7 +48,7 @@ void RoutingTable::updateFromCoordinator(
         // Build routing table from peer_routings
         routing_table_.clear();
         for (const auto& peer : peer_routings) {
-            auto client_it = routing_table_target_.find(peer.target());
+            auto client_it = routing_table_target_.find(convert(peer.target()));
             if (client_it == routing_table_target_.end()) continue;
 
             for (auto partition_id : peer.partitionids()) {

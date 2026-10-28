@@ -10,7 +10,7 @@
 #include "standalone_client.hxx"
 #include "coordinator.pb.h"
 #include "channel_config.hxx"
-
+std::string convert (const coordinator::Endpoint& ep );
 class RoutingTable {
 public:
     using SharedClient = std::shared_ptr<FastCacheStandaloneClient>;

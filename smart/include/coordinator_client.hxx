@@ -18,6 +18,7 @@ struct CoordinatorRoutingInfo {
     int32_t max_shards = 0;
     struct PeerInfo {
         std::string target;
+        uint16_t port;
         coordinator::NodeRole role;
         std::vector<uint32_t> partition_ids;
     };

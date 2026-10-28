@@ -430,7 +430,8 @@ void FastCacheSmartClient::refreshRouting() {
             peer_routings.reserve(routing_data->peer_routings.size());
             for (const auto &peer_info : routing_data->peer_routings) {
                 coordinator::PeerRouting peer;
-                peer.set_target(peer_info.target);
+                peer.mutable_target()->set_ip(peer_info.target);
+                peer.mutable_target()->set_port(peer_info.port);
                 peer.set_role(peer_info.role);
                 for (const auto &partition_id : peer_info.partition_ids) {
                     peer.add_partitionids(partition_id);
