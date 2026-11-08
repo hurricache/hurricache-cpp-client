@@ -25,6 +25,7 @@ A high-performance C++ client for HurriCache distributed in-memory cache with Va
 - **Container Support**: List, Queue, Vector, Set, Map, OrderedSet, OrderedMap
 - **Streaming Operations**: Efficient batch retrieval for large containers
 - **Atomic Operations**: Compare-and-swap, add, subtract, bitwise operations
+- **Weight Updates**: Atomic increment/decrement and absolute set of element weight in OrderedSet/OrderedMap
 - **Locking**: Read/Write/Global lock semantics with owner verification
 
 ### Two Client Modes
@@ -404,6 +405,37 @@ for (const auto& [key, value] : items) {
               << " Value: " << std::string(value->data, value->size) << "\n";
 }
 ```
+
+#### Weight update (OrderedSet / OrderedMap)
+
+Element weight can be updated atomically on the server. The element is addressed by an
+exact **(elementKey, currentOrder)** pair — one key may legally appear with several
+weights, so the current weight is required:
+
+```cpp
+Key containerKey = /* ... */;
+Key elementKey(6, const_cast<char*>("item1"));
+
+// Increment/decrement: weight 100 -> 115
+auto res = client.updateContainerWeight(containerKey, nullptr, elementKey,
+                                        100 /*currentOrder*/, +15 /*deltaOrder*/).get();
+// res is a Value with INT payload = new weight (nullptr if element not found)
+
+// Absolute set: weight 115 -> 50
+res = client.setContainerWeight(containerKey, nullptr, elementKey,
+                                115 /*currentOrder*/, 50 /*newOrder*/).get();
+
+if (res) {
+    // new weight is in res->int_value
+    delete res;
+}
+```
+
+- Weight is `uint64`; leaving the range (overflow or decrement below zero) fails with
+  `StatusCode::OUT_OF_RANGE` and changes nothing.
+- In OrderedMap the payload is preserved on weight update.
+- Available in both `FastCacheStandaloneClient` and `FastCacheSmartClient` (routed to
+  the partition owner).
 
 ### Locking Operations
 

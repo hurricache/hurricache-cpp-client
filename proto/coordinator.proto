@@ -6,69 +6,72 @@ option java_outer_classname = "coordinator";
 package coordinator;
 
 message Endpoint{
-  string ip = 1;
-  uint32 port=2;
+    string ip = 1;
+    uint32 port=2;
 }
 
 message PeerAnnounceRequest {
-  Endpoint target = 1;
-  Endpoint coordinator_target = 2;
-  Endpoint replicator_target = 3;
-  uint64 uptime = 4;
-  string cluster_id=5;
+    Endpoint target = 1;
+    Endpoint coordinator_target = 2;
+    Endpoint replicator_target = 3;
+    optional Endpoint redis_target = 4;
+    uint64 uptime = 5;
+    string cluster_id=6;
 }
 
 message NodeInformation {
-  Endpoint target = 1;
-  Endpoint coordinator_target = 2;
-  uint64 uptime = 4;
-  optional Endpoint impactedNode = 5;
+    Endpoint target = 1;
+    Endpoint coordinator_target = 2;
+    uint64 uptime = 4;
+    optional Endpoint impactedNode = 5;
 }
 
 
 message PeerAnnounceReply {
-  Endpoint target = 1;
-  Endpoint coordinator_target = 2;
-  Endpoint replicator_target = 3;
-  uint64 uptime = 4;
-  string cluster_id=5;
+    Endpoint target = 1;
+    Endpoint coordinator_target = 2;
+    Endpoint replicator_target = 3;
+    optional Endpoint redis_target = 4;
+    uint64 uptime = 5;
+    string cluster_id=6;
 }
 
 message Ping {
-  Endpoint target = 1;
-  Endpoint coordinator_target = 2;
-  uint64 uptime = 3;
-  string cluster_id=4;
+    Endpoint target = 1;
+    Endpoint coordinator_target = 2;
+    uint64 uptime = 3;
+    string cluster_id=4;
 }
 
 message Pong {
-  Endpoint target = 1;
-  Endpoint coordinator_target = 2;
-  uint64 uptime = 3;
-  string cluster_id=4;
+    Endpoint target = 1;
+    Endpoint coordinator_target = 2;
+    uint64 uptime = 3;
+    string cluster_id=4;
 }
 
 enum NodeRole {
-  UNDEFINED=0;
-  MASTER=1;BACKUP=2;
+    UNDEFINED=0;
+    MASTER=1;BACKUP=2;
 
 }
 
 message PeerRouting {
-  Endpoint target = 1;
-  NodeRole role = 2;
-  repeated uint32 partitionIds = 3;
+    Endpoint target = 1;
+    Endpoint redis_target = 2;
+    NodeRole role = 3;
+    repeated uint32 partitionIds = 4;
 }
 
 message PeerRoutingRequest {
-  Endpoint target = 1;
+    Endpoint target = 1;
 }
 
 
 message RoutingInfoData {
-  uint32 max_shards=1;
-  repeated PeerRouting peerRouting = 2;
-  optional string coordinator = 3;
+    uint32 max_shards=1;
+    repeated PeerRouting peerRouting = 2;
+    optional Endpoint coordinator = 3;
 }
 
 
@@ -77,16 +80,16 @@ message Void{
 }
 
 message BoolResponse{
-  bool result=1;
+    bool result=1;
 }
 
 
 service CoordinatorService{
-  //init message sent node to neighbours to coordinator  interface
-  rpc init(PeerAnnounceRequest) returns (PeerAnnounceReply){}
-  rpc ping(Ping) returns (Pong){}
-  rpc getRoutingInfo(PeerRoutingRequest) returns (stream PeerRouting){}
-  rpc sendRoutingInfo(RoutingInfoData) returns (Void){}
-  rpc triggerMigration(NodeInformation) returns (BoolResponse){}
-  rpc provideGlobalRoutingInfo(Void) returns(stream RoutingInfoData){}
+    //init message sent node to neighbours to coordinator  interface
+    rpc init(PeerAnnounceRequest) returns (PeerAnnounceReply){}
+    rpc ping(Ping) returns (Pong){}
+    rpc getRoutingInfo(PeerRoutingRequest) returns (stream PeerRouting){}
+    rpc sendRoutingInfo(RoutingInfoData) returns (Void){}
+    rpc triggerMigration(NodeInformation) returns (BoolResponse){}
+    rpc provideGlobalRoutingInfo(Void) returns(stream RoutingInfoData){}
 }

@@ -330,6 +330,117 @@ public:
                                                  int32_t clientId = 0,
                                                  std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
+    // Контейнерные атомики: elementKey для MAP/ORDERED_MAP, pos для VECTOR/LIST.
+    // Возвращают СТАРОЕ значение элемента (как скалярные атомики).
+
+    [[nodiscard]] std::future<ValuePtr> atomicExchange(const Key &key, const KeyHint *hint, const Key &elementKey,
+                                                      int64_t value,
+                                                      std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                      int32_t clientId = 0,
+                                                      std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicExchange(const Key &key, const KeyHint *hint, const Key &elementKey,
+                                                      double value,
+                                                      std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                      int32_t clientId = 0,
+                                                      std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicExchange(const Key &key, const KeyHint *hint, uint64_t pos,
+                                                      int64_t value,
+                                                      std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                      int32_t clientId = 0,
+                                                      std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicExchange(const Key &key, const KeyHint *hint, uint64_t pos,
+                                                      double value,
+                                                      std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                      int32_t clientId = 0,
+                                                      std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicAdd(const Key &key, const KeyHint *hint, const Key &elementKey,
+                                                 int64_t delta,
+                                                 std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                 int32_t clientId = 0,
+                                                 std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicAdd(const Key &key, const KeyHint *hint, const Key &elementKey,
+                                                 double delta,
+                                                 std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                 int32_t clientId = 0,
+                                                 std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicAdd(const Key &key, const KeyHint *hint, uint64_t pos,
+                                                 int64_t delta,
+                                                 std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                 int32_t clientId = 0,
+                                                 std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicAdd(const Key &key, const KeyHint *hint, uint64_t pos,
+                                                 double delta,
+                                                 std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                 int32_t clientId = 0,
+                                                 std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicSub(const Key &key, const KeyHint *hint, const Key &elementKey,
+                                                 int64_t delta,
+                                                 std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                 int32_t clientId = 0,
+                                                 std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicSub(const Key &key, const KeyHint *hint, const Key &elementKey,
+                                                 double delta,
+                                                 std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                 int32_t clientId = 0,
+                                                 std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicSub(const Key &key, const KeyHint *hint, uint64_t pos,
+                                                 int64_t delta,
+                                                 std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                 int32_t clientId = 0,
+                                                 std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicSub(const Key &key, const KeyHint *hint, uint64_t pos,
+                                                 double delta,
+                                                 std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                 int32_t clientId = 0,
+                                                 std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicAnd(const Key &key, const KeyHint *hint, const Key &elementKey,
+                                                 int64_t mask,
+                                                 std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                 int32_t clientId = 0,
+                                                 std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicAnd(const Key &key, const KeyHint *hint, uint64_t pos,
+                                                 int64_t mask,
+                                                 std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                 int32_t clientId = 0,
+                                                 std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicOr(const Key &key, const KeyHint *hint, const Key &elementKey,
+                                                int64_t mask,
+                                                std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                int32_t clientId = 0,
+                                                std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicOr(const Key &key, const KeyHint *hint, uint64_t pos,
+                                                int64_t mask,
+                                                std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                int32_t clientId = 0,
+                                                std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicXor(const Key &key, const KeyHint *hint, const Key &elementKey,
+                                                 int64_t mask,
+                                                 std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                 int32_t clientId = 0,
+                                                 std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> atomicXor(const Key &key, const KeyHint *hint, uint64_t pos,
+                                                 int64_t mask,
+                                                 std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
+                                                 int32_t clientId = 0,
+                                                 std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+
 
     [[nodiscard]] std::future<ValuePtr> atomicAnd(const Key &key, const KeyHint *hint, int64_t mask,
                                                  std::chrono::milliseconds ttl = std::chrono::milliseconds(0),
@@ -377,6 +488,25 @@ public:
                                                              int32_t clientId = 0,
                                                              std::chrono::milliseconds timeout =
                                                                      std::chrono::milliseconds(0));
+
+    // Обновление веса элемента ordered-контейнера (ORDERED_SET/ORDERED_MAP).
+    // Элемент адресуется точным (elementKey + currentOrder); один ключ может иметь
+    // несколько весов, поэтому текущий вес обязателен.
+    // updateContainerWeight — инкремент/декремент (deltaOrder со знаком);
+    // setContainerWeight — абсолютная установка веса.
+    // Выход за границы uint64 -> StatusCode::OUT_OF_RANGE.
+    // Возвращает Value с INT-пейлоадом нового веса (nullptr, если элемент не найден).
+    [[nodiscard]] std::future<ValuePtr> updateContainerWeight(const Key &key, const KeyHint *hint, const Key &elementKey,
+                                                              uint64_t currentOrder, int64_t deltaOrder,
+                                                              int32_t clientId = 0,
+                                                              std::chrono::milliseconds timeout =
+                                                                      std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> setContainerWeight(const Key &key, const KeyHint *hint, const Key &elementKey,
+                                                           uint64_t currentOrder, uint64_t newOrder,
+                                                           int32_t clientId = 0,
+                                                           std::chrono::milliseconds timeout =
+                                                                   std::chrono::milliseconds(0));
 
     [[nodiscard]] std::future<uint32_t> removeFromContainer(const Key &key, const KeyHint *hint, const Key &elementKey,
                                                            int32_t clientId = 0,

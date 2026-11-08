@@ -1684,6 +1684,34 @@ std::future<ValuePtr> FastCacheSmartClient::updateContainerValue(const Key &key,
     });
 }
 
+std::future<ValuePtr> FastCacheSmartClient::updateContainerWeight(const Key &key, const KeyHint *hint,
+                                                                  const Key &elementKey,
+                                                                  uint64_t currentOrder, int64_t deltaOrder,
+                                                                  int32_t clientId,
+                                                                  std::chrono::milliseconds timeout) {
+    auto key_copy = copyKey(key);
+    auto hint_copy = resolveHint(key, hint);
+    auto element_copy = copyKey(elementKey);
+    const int32_t cid = effectiveClientId(clientId);
+    return execute<ValuePtr>(hint_copy, [key_copy, hint_copy, element_copy, currentOrder, deltaOrder, cid, timeout](SharedClient c) {
+        return c->updateContainerWeight(*key_copy, hint_copy.get(), *element_copy, currentOrder, deltaOrder, cid, timeout);
+    });
+}
+
+std::future<ValuePtr> FastCacheSmartClient::setContainerWeight(const Key &key, const KeyHint *hint,
+                                                               const Key &elementKey,
+                                                               uint64_t currentOrder, uint64_t newOrder,
+                                                               int32_t clientId,
+                                                               std::chrono::milliseconds timeout) {
+    auto key_copy = copyKey(key);
+    auto hint_copy = resolveHint(key, hint);
+    auto element_copy = copyKey(elementKey);
+    const int32_t cid = effectiveClientId(clientId);
+    return execute<ValuePtr>(hint_copy, [key_copy, hint_copy, element_copy, currentOrder, newOrder, cid, timeout](SharedClient c) {
+        return c->setContainerWeight(*key_copy, hint_copy.get(), *element_copy, currentOrder, newOrder, cid, timeout);
+    });
+}
+
 std::future<uint32_t> FastCacheSmartClient::removeFromContainer(const Key &key, const KeyHint *hint,
                                                                 const Key &elementKey, int32_t clientId,
                                                                 std::chrono::milliseconds timeout) {

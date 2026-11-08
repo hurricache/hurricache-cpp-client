@@ -350,6 +350,22 @@ public:
                                                              int32_t clientId = 0,
                                                              std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
+    // Обновление веса элемента ordered-контейнера (ORDERED_SET/ORDERED_MAP).
+    // Элемент адресуется точным (elementKey + currentOrder).
+    // updateContainerWeight — инкремент/декремент; setContainerWeight — абсолютный вес.
+    // Выход за границы uint64 -> StatusCode::OUT_OF_RANGE.
+    [[nodiscard]] std::future<ValuePtr> updateContainerWeight(const Key &key, const KeyHint *hint, const Key &elementKey,
+                                                              uint64_t currentOrder, int64_t deltaOrder,
+                                                              int32_t clientId = 0,
+                                                              std::chrono::milliseconds timeout =
+                                                                      std::chrono::milliseconds(0));
+
+    [[nodiscard]] std::future<ValuePtr> setContainerWeight(const Key &key, const KeyHint *hint, const Key &elementKey,
+                                                           uint64_t currentOrder, uint64_t newOrder,
+                                                           int32_t clientId = 0,
+                                                           std::chrono::milliseconds timeout =
+                                                                   std::chrono::milliseconds(0));
+
     [[nodiscard]] std::future<uint32_t> removeFromContainer(const Key &key, const KeyHint *hint, const Key &elementKey,
                                                            int32_t clientId = 0,
                                                            std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
