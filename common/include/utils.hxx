@@ -33,6 +33,15 @@ private:
     std::string route_trailer_;
 };
 
+// x-hc-client-ts-bin: client send time (GMT-0 epoch ms), binary uint64.
+// The server stamps write versions with it and rejects stale writes.
+inline void attachClientSendTs(grpc::ClientContext &context) {
+    const uint64_t ts = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+    context.AddMetadata("x-hc-client-ts-bin",
+                        std::string(reinterpret_cast<const char *>(&ts), sizeof(ts)));
+}
+
 inline std::string extractRouteTrailer(const grpc::ClientContext &context) {
     static const std::string kRouteKey = "x-fastcache-route";
     const auto &trailers = context.GetServerTrailingMetadata();
@@ -235,13 +244,14 @@ std::future<ResultType> SendAsyncRequest(
     auto *call = new RpcCallData<ResponseType, ResultType>();
     call->transformer = std::move(transformer);
     std::future<ResultType> future = call->promise.get_future();
+    attachClientSendTs(call->context);
 
     std::chrono::milliseconds effectiveTimeout = (timeout.count() > 0) ? timeout : client->getDefaultTimeout();
     if (effectiveTimeout.count() > 0) {
         call->context.set_deadline(std::chrono::system_clock::now() + effectiveTimeout);
     }
 
-    // Вызов метода через стаб и очередь клиента (предполагаем наличие геттеров getAsyncStub() и getCompletionQueue())
+    // Invoke the method via the stub and the client's completion queue (assumes getAsyncStub() and getCompletionQueue() getters exist)
     auto stub = client->getAsyncStub();
     auto &cq = client->getCompletionQueue();
 
@@ -271,6 +281,7 @@ std::future<ResultType> SendAsyncStreamRequest(
     auto *call = new StreamCallData<ResponseChunkType, ResultType>();
     call->chunk_accumulator = std::move(accumulator);
     std::future<ResultType> future = call->promise.get_future();
+    attachClientSendTs(call->context);
 
     std::chrono::milliseconds effectiveTimeout = (timeout.count() > 0) ? timeout : client->getDefaultTimeout();
     if (effectiveTimeout.count() > 0) {

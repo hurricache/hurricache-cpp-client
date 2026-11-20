@@ -17,7 +17,7 @@ public:
 
     RoutingTable() : max_shards_(1024) {}
 
-    // Обновление из RoutingInfoData
+    // Update from RoutingInfoData
     void updateFromCoordinator(
         int32_t max_shards,
         const std::vector<coordinator::PeerRouting>& peer_routings,
@@ -25,14 +25,14 @@ public:
         std::chrono::milliseconds timeout,
         int32_t compression_threshold);
 
-    // Получение клиента для shard + role
+    // Get the client for shard + role
     SharedClient getRoute(int shard, coordinator::NodeRole role) const;
 
-    // Получение клиента по target
+    // Get the client by target
     SharedClient getRouteByTarget(const std::string& target) const;
 
-    // Reroute-кейс: вернуть существующий клиент или создать новый для target
-    // (аналог routingTableTarget.computeIfAbsent в Java)
+    // Reroute case: return the existing client or create a new one for target
+    // (equivalent of routingTableTarget.computeIfAbsent in Java)
     SharedClient getOrCreateByTarget(const std::string& target,
                                      const ChannelConfig& channel_config,
                                      std::chrono::milliseconds timeout,

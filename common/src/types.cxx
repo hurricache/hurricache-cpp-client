@@ -78,7 +78,7 @@ Value::Value(Value &&other) noexcept : size(other.size), type(other.type) {
     if (type == BYTES) {
         data = other.data;
     } else {
-        int_value = other.int_value; // покрывает и int_value, и double_value через union
+        int_value = other.int_value; // covers both int_value and double_value via the union
     }
     other.size = 0;
     other.type = BYTES;

@@ -330,8 +330,8 @@ public:
                                                  int32_t clientId = 0,
                                                  std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    // Контейнерные атомики: elementKey для MAP/ORDERED_MAP, pos для VECTOR/LIST.
-    // Возвращают СТАРОЕ значение элемента (как скалярные атомики).
+    // Container atomics: elementKey for MAP/ORDERED_MAP, pos for VECTOR/LIST.
+    // Return the OLD element value (same as scalar atomics).
 
     [[nodiscard]] std::future<ValuePtr> atomicExchange(const Key &key, const KeyHint *hint, const Key &elementKey,
                                                       int64_t value,
@@ -489,13 +489,13 @@ public:
                                                              std::chrono::milliseconds timeout =
                                                                      std::chrono::milliseconds(0));
 
-    // Обновление веса элемента ordered-контейнера (ORDERED_SET/ORDERED_MAP).
-    // Элемент адресуется точным (elementKey + currentOrder); один ключ может иметь
-    // несколько весов, поэтому текущий вес обязателен.
-    // updateContainerWeight — инкремент/декремент (deltaOrder со знаком);
-    // setContainerWeight — абсолютная установка веса.
-    // Выход за границы uint64 -> StatusCode::OUT_OF_RANGE.
-    // Возвращает Value с INT-пейлоадом нового веса (nullptr, если элемент не найден).
+    // Update the weight of an ordered-container element (ORDERED_SET/ORDERED_MAP).
+    // The element is addressed exactly (elementKey + currentOrder); one key may have
+    // several weights, so the current weight is required.
+    // updateContainerWeight — increment/decrement (signed deltaOrder);
+    // setContainerWeight — absolute weight assignment.
+    // uint64 overflow/underflow -> StatusCode::OUT_OF_RANGE.
+    // Returns a Value with the INT payload of the new weight (nullptr if the element is not found).
     [[nodiscard]] std::future<ValuePtr> updateContainerWeight(const Key &key, const KeyHint *hint, const Key &elementKey,
                                                               uint64_t currentOrder, int64_t deltaOrder,
                                                               int32_t clientId = 0,
@@ -542,7 +542,7 @@ public:
     }
 
     [[nodiscard]] grpc::CompletionQueue& getCompletionQueue() {
-        return const_cast<grpc::CompletionQueue&>(cq_); // или не константная ссылка
+        return const_cast<grpc::CompletionQueue&>(cq_); // or a non-const reference
     }
 private:
     // Class members

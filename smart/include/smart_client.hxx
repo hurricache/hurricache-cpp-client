@@ -350,10 +350,10 @@ public:
                                                              int32_t clientId = 0,
                                                              std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-    // Обновление веса элемента ordered-контейнера (ORDERED_SET/ORDERED_MAP).
-    // Элемент адресуется точным (elementKey + currentOrder).
-    // updateContainerWeight — инкремент/декремент; setContainerWeight — абсолютный вес.
-    // Выход за границы uint64 -> StatusCode::OUT_OF_RANGE.
+    // Update the weight of an ordered-container element (ORDERED_SET/ORDERED_MAP).
+    // The element is addressed exactly (elementKey + currentOrder).
+    // updateContainerWeight — increment/decrement; setContainerWeight — absolute weight.
+    // uint64 overflow/underflow -> StatusCode::OUT_OF_RANGE.
     [[nodiscard]] std::future<ValuePtr> updateContainerWeight(const Key &key, const KeyHint *hint, const Key &elementKey,
                                                               uint64_t currentOrder, int64_t deltaOrder,
                                                               int32_t clientId = 0,
